@@ -46,7 +46,18 @@ const ComparisonTable = ({ data }: { data: ComparisonRow[] }) => {
     { name: t('negative'), value: 25, fill: '#ef4444' },
   ];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface CustomTooltipProps {
+    active?: boolean;
+    payload?: Array<{
+      payload: {
+        originalYou: string;
+        originalCompetitors: string;
+      };
+    }>;
+    label?: string;
+  }
+
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="glass-card p-3 border border-white/10 shadow-xl">

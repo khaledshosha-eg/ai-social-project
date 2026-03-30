@@ -58,11 +58,12 @@ const DashboardPage = () => {
       }
 
       navigate('/results', { state: data });
-    } catch (err: any) {
-      console.error('Analysis failed:', err);
+    } catch (err) {
+      const error = err as Error;
+      console.error('Analysis failed:', error);
       toast({
         title: t('analyze'),
-        description: err?.message || 'Analysis failed. Please try again.',
+        description: error?.message || 'Analysis failed. Please try again.',
         variant: 'destructive',
       });
     } finally {
