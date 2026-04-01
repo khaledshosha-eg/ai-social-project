@@ -1,177 +1,201 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search, BarChart3, Settings, LogOut, Sparkles, Trash2 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 
-const sidebarItems = [
-  { icon: BarChart3, key: 'dashboard' },
-  { icon: Search, key: 'results' },
-  { icon: Settings, key: 'settings' },
-];
+interface PageValues {
+  url: string;
+  followers: string;
+  total_posts: string;
+  content_type: string;
+  frequency: string;
+  ads: string;
+}
+
+interface FormData {
+  client: PageValues;
+  comp1: PageValues;
+  comp2: PageValues;
+  comp3: PageValues;
+}
+
+const PageInputCard = ({ title, color, section, values, onChange }: { 
+  title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
+}) => {
+  // Mapping to our theme colors: primary (purple) and accent (gold)
+  const colorMap: Record<string, string> = { 
+    blue: 'text-primary', 
+    purple: 'text-primary', 
+    amber: 'text-accent', 
+    emerald: 'text-emerald-400', 
+    green: 'text-emerald-400' 
+  };
+  const bgMap: Record<string, string> = { 
+    blue: 'bg-primary', 
+    purple: 'bg-primary', 
+    amber: 'bg-accent', 
+    emerald: 'bg-emerald-500', 
+    green: 'bg-emerald-500' 
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="p-6 rounded-2xl bg-card border border-border space-y-4 shadow-xl text-left" 
+      style={{ direction: "ltr" }}
+    >
+      <h3 className={`text-lg font-bold ${colorMap[color] || 'text-foreground'} flex items-center gap-2 justify-start`}>
+        <span className={`w-2 h-6 ${bgMap[color] || 'bg-foreground'} rounded-full`}></span>{title}
+      </h3>
+      <input 
+        type="text" 
+        placeholder="Page URL" 
+        value={values?.url || ''} 
+        className="w-full bg-secondary/50 border border-border rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+        onChange={(e) => onChange(section, 'url', e.target.value)} 
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <input 
+          type="text" 
+          placeholder="Followers" 
+          value={values?.followers || ''} 
+          className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => onChange(section, 'followers', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          placeholder="Total Posts" 
+          value={values?.total_posts || ''} 
+          className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => onChange(section, 'total_posts', e.target.value)} 
+        />
+        <select 
+          value={values?.content_type || ''} 
+          className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
+          onChange={(e) => onChange(section, 'content_type', e.target.value)}
+        >
+          <option value="" className="text-muted-foreground">Content Type</option>
+          <option value="Image">Image</option>
+          <option value="Video">Video</option>
+          <option value="Carousel">Carousel</option>
+          <option value="Mixed">Mixed</option>
+        </select>
+        <select 
+          value={values?.frequency || ''} 
+          className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
+          onChange={(e) => onChange(section, 'frequency', e.target.value)}
+        >
+          <option value="" className="text-muted-foreground">Frequency</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+    </motion.div>
+  );
+};
 
 const DashboardPage = () => {
-  const { t } = useLanguage();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [facebookUrl, setFacebookUrl] = useState('');
-  const [competitors, setCompetitors] = useState(['', '', '']);
   const [loading, setLoading] = useState(false);
 
-  const handleAnalyze = async () => {
-    if (!facebookUrl) return;
+  const defaultData: FormData = { 
+    client: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
+    comp1: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
+    comp2: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
+    comp3: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' }
+  };
+
+  const [formData, setFormData] = useState<FormData>(() => {
+    try {
+      const saved = localStorage.getItem('social_pulse_history_v3');
+      return saved ? JSON.parse(saved) : defaultData;
+    } catch {
+      return defaultData;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('social_pulse_history_v3', JSON.stringify(formData));
+  }, [formData]);
+
+  const handleUpdate = (section: keyof FormData, field: keyof PageValues, value: string) => {
+    setFormData((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
+  };
+
+  const startAnalysis = async () => {
+    if (!formData.client.url) {
+      alert("Please enter Primary Page URL");
+      return;
+    }
+
     setLoading(true);
 
-    const clientUrl = facebookUrl.trim();
-    const competitorList = competitors.filter(Boolean);
-
     try {
-      const requestBody = {
-        clientUrl,
-        competitors: competitorList,
-      };
+      const FUNCTION_URL = 'https://pkcrelvrhfvkdadlisnw.supabase.co/functions/v1/analyze-marketing';
+      const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      console.log('Calling analyze-market Edge Function');
-      console.log('Request body:', requestBody);
-
-      const [invokeResult] = await Promise.all([
-        supabase.functions.invoke('analyze-market', {
-          body: requestBody,
-        }),
-        new Promise((resolve) => setTimeout(resolve, 5000)),
-      ]);
-
-      const { data, error } = invokeResult;
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(`Edge function returned error: ${error.message}`);
-      }
-
-      console.log('Response data:', data);
-
-      if (data?.error) {
-        console.error('Edge function returned error payload:', data.error);
-        throw new Error(data.error);
-      }
-
-      navigate('/results', { state: data });
-    } catch (err) {
-      const error = err as Error;
-      console.error('Analysis failed:', error);
-      toast({
-        title: t('analyze'),
-        description: error?.message || 'Analysis failed. Please try again.',
-        variant: 'destructive',
+      console.log('Calling analyze-marketing at:', FUNCTION_URL);
+      
+      const response = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ANON_KEY}`,
+          'apikey': ANON_KEY,
+        },
+        body: JSON.stringify(formData),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Edge function error:', response.status, errorText);
+        throw new Error(`Edge function returned ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("AI RESULT:", data);
+
+      if (data) {
+        localStorage.setItem('analysis_result', JSON.stringify(data));
+        navigate('/results');
+      }
+
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error("Error:", error.message);
+      alert(error.message || "Analysis failed.");
     } finally {
       setLoading(false);
     }
   };
 
-  const updateCompetitor = (index: number, value: string) => {
-    const updated = [...competitors];
-    updated[index] = value;
-    setCompetitors(updated);
-  };
-
   return (
-    <div className="min-h-screen flex">
-      <motion.aside
-        initial={{ x: -80, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="glass-card w-16 md:w-64 min-h-screen flex flex-col items-center md:items-stretch p-4 gap-2 rounded-none border-e"
-      >
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <Sparkles className="w-6 h-6 text-primary shrink-0" />
-          <span className="hidden md:block text-lg font-bold text-foreground">{t('appName')}</span>
+    <div className="min-h-screen bg-background text-foreground p-6" style={{ fontFamily: "sans-serif" }}>
+      <div className="max-w-6xl mx-auto space-y-10 text-center">
+        <h1 className="text-5xl font-bold tracking-tighter">AI Social <span className="text-primary">Project</span></h1>
+        <div className="grid md:grid-cols-2 gap-8 text-left">
+          <PageInputCard title="Primary Page" color="blue" section="client" values={formData.client} onChange={handleUpdate} />
+          <PageInputCard title="Competitor 1" color="purple" section="comp1" values={formData.comp1} onChange={handleUpdate} />
+          <PageInputCard title="Competitor 2" color="amber" section="comp2" values={formData.comp2} onChange={handleUpdate} />
+          <PageInputCard title="Competitor 3" color="green" section="comp3" values={formData.comp3} onChange={handleUpdate} />
         </div>
-
-        <nav className="flex-1 space-y-1">
-          {sidebarItems.map(({ icon: Icon, key }) => (
-            <button
-              key={key}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer"
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              <span className="hidden md:block text-sm font-medium">{t(key)}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-        >
-          <LogOut className="w-5 h-5 shrink-0" />
-          <span className="hidden md:block text-sm font-medium">{t('logout')}</span>
-        </button>
-      </motion.aside>
-
-      <main className="flex-1 p-6 md:p-12 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass-card glow-border p-8 md:p-10 w-full max-w-2xl space-y-8"
-        >
-          <h2 className="text-2xl font-bold text-foreground">{t('dashboard')}</h2>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">{t('yourFacebookUrl')}</label>
-            <input
-              type="url"
-              value={facebookUrl}
-              onChange={(e) => setFacebookUrl(e.target.value)}
-              placeholder={t('enterFacebookUrl')}
-              className="w-full px-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground">{t('competitorUrls')}</label>
-            {competitors.map((url, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => updateCompetitor(i, e.target.value)}
-                  placeholder={`${t('competitor')} ${i + 1}`}
-                  className="flex-1 px-4 py-3 rounded-lg bg-secondary/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                />
-                {url && (
-                  <button onClick={() => updateCompetitor(i, '')} className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAnalyze}
-            disabled={loading || !facebookUrl}
-            className="w-full py-3.5 rounded-lg btn-glow text-primary-foreground font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        <div className="flex justify-center pt-10 pb-20 gap-4">
+          <button 
+            onClick={() => { localStorage.removeItem('social_pulse_history_v3'); window.location.reload(); }} 
+            className="bg-secondary hover:bg-secondary/80 text-foreground px-8 py-4 rounded-2xl font-bold transition-all border border-border"
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
-                />
-                {t('analyzing')}
-              </span>
-            ) : (
-              t('analyze')
-            )}
-          </motion.button>
-        </motion.div>
-      </main>
+            Clear All
+          </button>
+          <button 
+            disabled={loading} 
+            onClick={startAnalysis} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 rounded-2xl font-bold shadow-lg disabled:bg-muted transition-all"
+          >
+            {loading ? "Analyzing..." : "Start Analysis"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

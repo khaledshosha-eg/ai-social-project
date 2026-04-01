@@ -39,6 +39,7 @@ const translations: Translations = {
   responseTime: { en: 'Response Time', ar: 'وقت الاستجابة' },
   backToDashboard: { en: 'Back to Dashboard', ar: 'العودة للوحة التحكم' },
   aiGenerating: { en: 'AI is generating your content plan...', ar: 'الذكاء الاصطناعي يقوم بإنشاء خطة المحتوى...' },
+  recentAnalyses: { en: 'Recent Analyses', ar: 'عمليات تحليل حديثة' },
   logout: { en: 'Logout', ar: 'تسجيل الخروج' },
   competitorAvg: { en: 'Competitor Avg', ar: 'متوسط المنافسين' },
   scoreExcellent: { en: 'Excellent market position', ar: 'موقع ممتاز في السوق' },

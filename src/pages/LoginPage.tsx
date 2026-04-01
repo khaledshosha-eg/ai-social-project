@@ -3,17 +3,45 @@ import { motion } from 'framer-motion';
 import { Mail, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const LoginPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => navigate('/dashboard'), 1500);
+    setLoading(true);
+
+    try {
+      // حفظ الإيميل في جدول user_emails
+      const { error } = await supabase
+        .from('user_emails')
+        .insert([{ email, created_at: new Date().toISOString() }]);
+
+      if (error) {
+        console.error('Error saving email:', error);
+        // حتى لو فشل الحفظ في الجدول، هنكمل عملية الدخول عشان ممانعش المستخدم
+      }
+
+      localStorage.setItem('user_email', email);
+      setSent(true);
+      toast({
+        title: t('magicLinkSent'),
+        description: t('enterEmail'),
+      });
+
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (err) {
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,10 +87,19 @@ const LoginPage = () => {
             type="submit"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`w-full py-3 rounded-lg btn-glow text-primary-foreground font-semibold transition-all cursor-pointer ${sent ? '' : 'pulse-glow'}`}
-            disabled={sent}
+            className={`w-full py-3 rounded-lg btn-glow text-primary-foreground font-semibold transition-all cursor-pointer ${sent || loading ? '' : 'pulse-glow'}`}
+            disabled={sent || loading}
           >
-            {sent ? t('magicLinkSent') : t('sendMagicLink')}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
+                />
+                {t('analyzing')}
+              </span>
+            ) : sent ? t('magicLinkSent') : t('sendMagicLink')}
           </motion.button>
         </form>
       </motion.div>
