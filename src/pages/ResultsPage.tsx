@@ -17,7 +17,7 @@ interface AnalysisData {
 
 const ResultsPage = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
   const [data, setData] = useState<AnalysisData | null>(null);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ const ResultsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6" style={{ direction: "rtl" }}>
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto space-y-10">
         
         {/* Navigation & Actions */}
@@ -55,8 +55,8 @@ const ResultsPage = () => {
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 rotate-180" />
-            <span>العودة للوحة التحكم</span>
+            <ArrowLeft className={`w-5 h-5 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
+            <span>{t('backToDashboard')}</span>
           </button>
           <div className="flex gap-3">
             <button className="p-2 rounded-lg bg-secondary hover:bg-secondary/80 border border-border transition-all">
@@ -75,17 +75,17 @@ const ResultsPage = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-4xl md:text-5xl font-bold tracking-tight"
           >
-            نتائج تحليل <span className="text-primary">AI Social Project</span>
+            {t('results')} <span className="text-primary">{t('appName')}</span>
           </motion.h1>
           <div className="inline-flex items-center gap-4 bg-card p-4 rounded-2xl border border-border shadow-xl">
-            <div className="text-left">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Market Score</p>
+            <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">{t('marketScore')}</p>
               <p className="text-3xl font-black text-accent">{data.market_score}%</p>
             </div>
             <div className="w-px h-10 bg-border"></div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">حالة السوق</p>
-              <p className="text-lg font-bold text-emerald-400">فرصة ممتازة</p>
+            <div className={dir === 'rtl' ? 'text-left' : 'text-right'}>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">{t('marketOpportunity')}</p>
+              <p className="text-lg font-bold text-emerald-400">{t('excellentOpportunity')}</p>
             </div>
           </div>
         </div>
@@ -102,17 +102,17 @@ const ResultsPage = () => {
             <div className="bg-card/50 border border-border p-6 rounded-2xl shadow-xl h-full">
               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                 <span className="w-2 h-6 bg-accent rounded-full"></span>
-                تحليل SWOT
+                {t('swotAnalysis')}
               </h3>
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <h4 className="text-emerald-400 font-bold text-sm mb-2">نقاط القوة</h4>
+                  <h4 className="text-emerald-400 font-bold text-sm mb-2">{t('strengths')}</h4>
                   <ul className="text-xs space-y-1 list-disc list-inside text-muted-foreground">
                     {data.swot_analysis?.strengths?.map((s, i)=><li key={i}>{s}</li>)}
                   </ul>
                 </div>
                 <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
-                  <h4 className="text-rose-400 font-bold text-sm mb-2">نقاط الضعف</h4>
+                  <h4 className="text-rose-400 font-bold text-sm mb-2">{t('weaknesses')}</h4>
                   <ul className="text-xs space-y-1 list-disc list-inside text-muted-foreground">
                     {data.swot_analysis?.weaknesses?.map((w, i)=><li key={i}>{w}</li>)}
                   </ul>
@@ -134,7 +134,7 @@ const ResultsPage = () => {
             <div className="p-2 bg-primary/20 rounded-lg">
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            خلاصة التحليل الاستراتيجي
+            {t('analysisSummaryTitle')}
           </h3>
           <p className="text-lg text-muted-foreground leading-relaxed">
             {data.analysis_summary}
@@ -147,7 +147,7 @@ const ResultsPage = () => {
             onClick={() => navigate('/dashboard')}
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-10 py-4 rounded-2xl font-bold shadow-2xl transition-all hover:scale-105 active:scale-95"
           >
-            إجراء تحليل جديد
+            {t('newAnalysis')}
           </button>
         </div>
       </div>

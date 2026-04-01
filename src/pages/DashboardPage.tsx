@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PageValues {
   url: string;
@@ -21,6 +22,7 @@ interface FormData {
 const PageInputCard = ({ title, color, section, values, onChange }: { 
   title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
 }) => {
+  const { t } = useLanguage();
   // Mapping to our theme colors: primary (purple) and accent (gold)
   const colorMap: Record<string, string> = { 
     blue: 'text-primary', 
@@ -49,7 +51,7 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
       </h3>
       <input 
         type="text" 
-        placeholder="Page URL" 
+        placeholder={t('enterFacebookUrl')} 
         value={values?.url || ''} 
         className="w-full bg-secondary/50 border border-border rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
         onChange={(e) => onChange(section, 'url', e.target.value)} 
@@ -57,7 +59,7 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
       <div className="grid grid-cols-2 gap-3">
         <input 
           type="text" 
-          placeholder="Followers" 
+          placeholder={t('followers')} 
           value={values?.followers || ''} 
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
           onChange={(e) => onChange(section, 'followers', e.target.value)} 
@@ -85,7 +87,7 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
           onChange={(e) => onChange(section, 'frequency', e.target.value)}
         >
-          <option value="" className="text-muted-foreground">Frequency</option>
+          <option value="" className="text-muted-foreground">{t('postFrequency')}</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
@@ -97,6 +99,7 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const defaultData: FormData = { 
@@ -171,28 +174,28 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6" style={{ fontFamily: "sans-serif" }}>
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto space-y-10 text-center">
         <h1 className="text-5xl font-bold tracking-tighter">AI Social <span className="text-primary">Project</span></h1>
         <div className="grid md:grid-cols-2 gap-8 text-left">
-          <PageInputCard title="Primary Page" color="blue" section="client" values={formData.client} onChange={handleUpdate} />
-          <PageInputCard title="Competitor 1" color="purple" section="comp1" values={formData.comp1} onChange={handleUpdate} />
-          <PageInputCard title="Competitor 2" color="amber" section="comp2" values={formData.comp2} onChange={handleUpdate} />
-          <PageInputCard title="Competitor 3" color="green" section="comp3" values={formData.comp3} onChange={handleUpdate} />
+          <PageInputCard title={t('you')} color="blue" section="client" values={formData.client} onChange={handleUpdate} />
+          <PageInputCard title={`${t('competitor')} 1`} color="purple" section="comp1" values={formData.comp1} onChange={handleUpdate} />
+          <PageInputCard title={`${t('competitor')} 2`} color="amber" section="comp2" values={formData.comp2} onChange={handleUpdate} />
+          <PageInputCard title={`${t('competitor')} 3`} color="green" section="comp3" values={formData.comp3} onChange={handleUpdate} />
         </div>
         <div className="flex justify-center pt-10 pb-20 gap-4">
           <button 
             onClick={() => { localStorage.removeItem('social_pulse_history_v3'); window.location.reload(); }} 
             className="bg-secondary hover:bg-secondary/80 text-foreground px-8 py-4 rounded-2xl font-bold transition-all border border-border"
           >
-            Clear All
+            Clear
           </button>
           <button 
             disabled={loading} 
             onClick={startAnalysis} 
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 rounded-2xl font-bold shadow-lg disabled:bg-muted transition-all"
           >
-            {loading ? "Analyzing..." : "Start Analysis"}
+            {loading ? t('analyzing') : t('analyze')}
           </button>
         </div>
       </div>

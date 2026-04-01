@@ -56,6 +56,10 @@ const translations: Translations = {
   sentimentAnalysis: { en: 'Sentiment Analysis', ar: 'تحليل المشاعر' },
   positive: { en: 'Positive', ar: 'إيجابي' },
   negative: { en: 'Negative', ar: 'سلبي' },
+  marketOpportunity: { en: 'Market Opportunity', ar: 'حالة السوق' },
+  excellentOpportunity: { en: 'Excellent Opportunity', ar: 'فرصة ممتازة' },
+  analysisSummaryTitle: { en: 'Strategic Analysis Summary', ar: 'خلاصة التحليل الاستراتيجي' },
+  newAnalysis: { en: 'Start New Analysis', ar: 'إجراء تحليل جديد' },
   demoModeTitle: { en: 'Demo report shown', ar: 'تم عرض تقرير تجريبي' },
   demoModeDescription: { en: 'AI credits are exhausted, so a demo analysis was generated instead.', ar: 'تم استهلاك رصيد الذكاء الاصطناعي، لذلك تم إنشاء تحليل تجريبي بدلاً من ذلك.' },
 };

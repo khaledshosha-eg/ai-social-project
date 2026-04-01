@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -8,40 +7,46 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const formData = await req.json();
-
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-
     if (!GEMINI_API_KEY) {
       throw new Error("Missing GEMINI_API_KEY in Supabase Secrets");
     }
 
+    const formData = await req.json();
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
     const prompt = `
-ارجع JSON فقط بدون أي نص إضافي بالشكل التالي:
+You are a social media marketing expert. Analyze the following social media page data and compare the "Primary Page" with its "Competitors".
+Return the analysis strictly in JSON format with the following structure:
 
 {
-  "market_score": رقم من 0 إلى 100 يعبر عن مدى نجاح الصفحة الأساسية مقارنة بالمنافسين,
+  "market_score": number (0-100),
   "swot_analysis": {
-    "strengths": ["نقطة قوة بالعربي", "نقطة قوة بالعربي"],
-    "weaknesses": ["نقطة ضعف بالعربي", "نقطة ضعف بالعربي"]
+    "strengths": ["string in Arabic", "string in Arabic"],
+    "weaknesses": ["string in Arabic", "string in Arabic"]
   },
-  "analysis_summary": "تحليل استراتيجي كامل ومفصل بالعربي للنقاط الرئيسية وكيفية التحسين",
+  "analysis_summary": "detailed strategic analysis in Arabic",
   "comparison": [
-    { "metric": "Followers", "client": "عدد المتابعين للصفحة الأساسية", "competitor_avg": "متوسط عدد المتابعين للمنافسين" },
-    { "metric": "Content Quality", "client": "تقييم من 10", "competitor_avg": "تقييم من 10 للمنافسين" },
-    { "metric": "Engagement", "client": "تقييم من 10", "competitor_avg": "تقييم من 10 للمنافسين" }
+    { "metric": "Followers", "client": "value", "competitor_avg": "value" },
+    { "metric": "Content Quality", "client": "value", "competitor_avg": "value" },
+    { "metric": "Engagement", "client": "value", "competitor_avg": "value" }
   ]
 }
 
-حلل البيانات دي وقارن بين الصفحة الأساسية (Primary Page) والمنافسين (Competitors):
-${JSON.stringify(formData)}
+Input Data:
+${JSON.stringify(formData, null, 2)}
+
+Important:
+1. All descriptions, strengths, and weaknesses must be in Arabic.
+2. Ensure the "comparison" metrics reflect the input data accurately.
+3. Return ONLY the JSON object, no markdown blocks or extra text.
 `;
 
     const response = await fetch(apiUrl, {
@@ -59,33 +64,38 @@ ${JSON.stringify(formData)}
       }),
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      console.error("Gemini Error:", result);
-      throw new Error(result.error?.message || "Gemini API error");
+      const errorData = await response.json();
+      console.error("Gemini API Error:", errorData);
+      throw new Error(errorData.error?.message || "Failed to call Gemini API");
     }
 
+    const result = await response.json();
     const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!aiText) {
+      throw new Error("Empty response from AI");
+    }
 
     let parsed;
     try {
-      const cleaned = aiText.replace(/```json|```/g, '').trim();
+      // Robust JSON cleaning
+      const cleaned = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error("Parsing error:", aiText);
-      throw new Error("Failed to parse AI response as JSON");
+      console.error("JSON Parsing Error. Raw AI Text:", aiText);
+      throw new Error("AI returned invalid JSON format");
     }
 
-    // Ensure all expected fields are present
+    // Standardize the response structure
     const finalData = {
-      market_score: parsed.market_score || 0,
+      market_score: Number(parsed.market_score) || 0,
       swot_analysis: {
-        strengths: parsed.swot_analysis?.strengths || [],
-        weaknesses: parsed.swot_analysis?.weaknesses || []
+        strengths: Array.isArray(parsed.swot_analysis?.strengths) ? parsed.swot_analysis.strengths : [],
+        weaknesses: Array.isArray(parsed.swot_analysis?.weaknesses) ? parsed.swot_analysis.weaknesses : []
       },
-      analysis_summary: parsed.analysis_summary || "لم يتم توليد تحليل متاح",
-      comparison: parsed.comparison || []
+      analysis_summary: String(parsed.analysis_summary || "تحليل غير متوفر حالياً"),
+      comparison: Array.isArray(parsed.comparison) ? parsed.comparison : []
     };
 
     return new Response(JSON.stringify(finalData), {
@@ -94,10 +104,10 @@ ${JSON.stringify(formData)}
 
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("Function error:", err);
+    console.error("Edge Function Error:", err.message);
 
     return new Response(JSON.stringify({
-      error: err.message
+      error: err.message || "An unexpected error occurred"
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
