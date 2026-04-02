@@ -119,8 +119,11 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem('social_pulse_history_v3', JSON.stringify(formData));
-  }, [formData]);
+  const saved = localStorage.getItem('social_pulse_history_v3');
+  if (saved) {
+    setFormData(JSON.parse(saved));
+  }
+}, []);
 
   const handleUpdate = (section: keyof FormData, field: keyof PageValues, value: string) => {
     setFormData((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
@@ -128,7 +131,7 @@ const DashboardPage = () => {
 
   const startAnalysis = async () => {
     if (!formData.client.url) {
-      alert("Please enter Primary Page URL");
+      alert(t('enterFacebookUrl'));
       return;
     }
 
@@ -153,7 +156,7 @@ const DashboardPage = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Edge function error:', response.status, errorText);
-        throw new Error(`Edge function returned ${response.status}: ${errorText}`);
+        throw new Error(errorText || "Analysis failed.");
       }
 
       const data = await response.json();
@@ -167,7 +170,7 @@ const DashboardPage = () => {
     } catch (err: unknown) {
       const error = err as Error;
       console.error("Error:", error.message);
-      alert(error.message || "Analysis failed.");
+      alert(error.message);
     } finally {
       setLoading(false);
     }
