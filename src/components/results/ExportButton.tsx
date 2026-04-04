@@ -8,13 +8,8 @@ const ExportButton = () => {
   const { toast } = useToast();
 
   const handleDownloadPdf = () => {
-    // Add print-specific styles dynamically if needed, though most are in index.css
     window.print();
-    toast({ 
-      title: t('exportPdf'), 
-      description: t('exportPdfDesc'),
-      variant: "default"
-    });
+    toast({ title: t('exportPdf'), description: t('exportPdfDesc') });
   };
 
   const handleShare = async () => {
