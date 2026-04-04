@@ -37,7 +37,7 @@ const ComparisonTable = ({ data = [] }: ComparisonTableProps) => {
     originalCompetitors: row.competitor_avg || '0'
   }));
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: { payload: { originalYou: string | number, originalCompetitors: string | number } }[], label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean, payload?: any, label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border p-3 rounded-xl shadow-2xl backdrop-blur-md">
