@@ -23,7 +23,7 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
   title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
 }) => {
   const { t } = useLanguage();
-
+  // Mapping to our theme colors: primary (purple) and accent (gold)
   const colorMap: Record<string, string> = { 
     blue: 'text-primary', 
     purple: 'text-primary', 
@@ -31,7 +31,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
     emerald: 'text-emerald-400', 
     green: 'text-emerald-400' 
   };
-
   const bgMap: Record<string, string> = { 
     blue: 'bg-primary', 
     purple: 'bg-primary', 
@@ -50,7 +49,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
       <h3 className={`text-lg font-bold ${colorMap[color] || 'text-foreground'} flex items-center gap-2 justify-start`}>
         <span className={`w-2 h-6 ${bgMap[color] || 'bg-foreground'} rounded-full`}></span>{title}
       </h3>
-
       <input 
         type="text" 
         placeholder={t('enterFacebookUrl')} 
@@ -58,7 +56,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
         className="w-full bg-secondary/50 border border-border rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
         onChange={(e) => onChange(section, 'url', e.target.value)} 
       />
-
       <div className="grid grid-cols-2 gap-3">
         <input 
           type="text" 
@@ -67,7 +64,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
           onChange={(e) => onChange(section, 'followers', e.target.value)} 
         />
-
         <input 
           type="text" 
           placeholder="Total Posts" 
@@ -75,7 +71,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
           onChange={(e) => onChange(section, 'total_posts', e.target.value)} 
         />
-
         <select 
           value={values?.content_type || ''} 
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
@@ -87,7 +82,6 @@ const PageInputCard = ({ title, color, section, values, onChange }: {
           <option value="Carousel">Carousel</option>
           <option value="Mixed">Mixed</option>
         </select>
-
         <select 
           value={values?.frequency || ''} 
           className="bg-secondary/50 border border-border rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
@@ -125,11 +119,11 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('social_pulse_history_v3');
-    if (saved) {
-      setFormData(JSON.parse(saved));
-    }
-  }, []);
+  const saved = localStorage.getItem('social_pulse_history_v3');
+  if (saved) {
+    setFormData(JSON.parse(saved));
+  }
+}, []);
 
   const handleUpdate = (section: keyof FormData, field: keyof PageValues, value: string) => {
     setFormData((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
@@ -147,7 +141,7 @@ const DashboardPage = () => {
       const FUNCTION_URL = 'https://pkcrelvrhfvkdadlisnw.supabase.co/functions/v1/analyze-marketing';
       const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const userEmail = localStorage.getItem('user_email') || '';
+      console.log('Calling analyze-marketing at:', FUNCTION_URL);
       
       const response = await fetch(FUNCTION_URL, {
         method: 'POST',
@@ -156,15 +150,17 @@ const DashboardPage = () => {
           'Authorization': `Bearer ${ANON_KEY}`,
           'apikey': ANON_KEY,
         },
-        body: JSON.stringify({ ...formData, email: userEmail }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Edge function error:', response.status, errorText);
         throw new Error(errorText || "Analysis failed.");
       }
 
       const data = await response.json();
+      console.log("AI RESULT:", data);
 
       if (data) {
         localStorage.setItem('analysis_result', JSON.stringify(data));
@@ -173,6 +169,7 @@ const DashboardPage = () => {
 
     } catch (err: unknown) {
       const error = err as Error;
+      console.error("Error:", error.message);
       alert(error.message);
     } finally {
       setLoading(false);
@@ -182,18 +179,13 @@ const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto space-y-10 text-center">
-
-        <h1 className="text-5xl font-bold tracking-tighter">
-          {t('appName')}
-        </h1>
-
+        <h1 className="text-5xl font-bold tracking-tighter">AI Social <span className="text-primary">Project</span></h1>
         <div className="grid md:grid-cols-2 gap-8 text-left">
           <PageInputCard title={t('you')} color="blue" section="client" values={formData.client} onChange={handleUpdate} />
           <PageInputCard title={`${t('competitor')} 1`} color="purple" section="comp1" values={formData.comp1} onChange={handleUpdate} />
           <PageInputCard title={`${t('competitor')} 2`} color="amber" section="comp2" values={formData.comp2} onChange={handleUpdate} />
           <PageInputCard title={`${t('competitor')} 3`} color="green" section="comp3" values={formData.comp3} onChange={handleUpdate} />
         </div>
-
         <div className="flex justify-center pt-10 pb-20 gap-4">
           <button 
             onClick={() => { localStorage.removeItem('social_pulse_history_v3'); window.location.reload(); }} 
@@ -201,7 +193,6 @@ const DashboardPage = () => {
           >
             Clear
           </button>
-
           <button 
             disabled={loading} 
             onClick={startAnalysis} 
@@ -210,7 +201,6 @@ const DashboardPage = () => {
             {loading ? t('analyzing') : t('analyze')}
           </button>
         </div>
-
       </div>
     </div>
   );
