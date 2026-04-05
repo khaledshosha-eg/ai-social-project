@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ThemeLanguageToggle from "@/components/ThemeLanguageToggle";
+// استدعاء الصفحة الرئيسية (Index) والـ Login
+import Index from "./pages/Index"; 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -23,7 +25,10 @@ const App = () => (
           <ThemeLanguageToggle />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<LoginPage />} />
+              {/* تعديل: الصفحة الرئيسية الآن هي Index اللي فيها تصميمك الزجاجي */}
+              <Route path="/" element={<Index />} />
+              {/* صفحة الـ Login بقت في مسار منفصل لو احتجتها */}
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="*" element={<NotFound />} />
