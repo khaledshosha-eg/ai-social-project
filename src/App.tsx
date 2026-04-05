@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import ThemeLanguageToggle from "@/components/ThemeLanguageToggle";
-// استدعاء الصفحة الرئيسية (Index) والـ Login
+
+// استدعاء الصفحات
 import Index from "./pages/Index"; 
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -20,20 +20,25 @@ const App = () => (
     <ThemeProvider>
       <LanguageProvider>
         <TooltipProvider>
+          {/* تم حذف التوجل الخارجي لعدم التكرار مع تصميم الهوم بيج */}
           <Toaster />
           <Sonner />
-          <ThemeLanguageToggle />
+          
           <BrowserRouter>
             <Routes>
-              {/* تعديل: الصفحة الرئيسية الآن هي Index اللي فيها تصميمك الزجاجي */}
+              {/* الصفحة الرئيسية: التصميم الزجاجي الاحترافي */}
               <Route path="/" element={<Index />} />
-              {/* صفحة الـ Login بقت في مسار منفصل لو احتجتها */}
+              
+              {/* المسارات الأخرى */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/results" element={<ResultsPage />} />
+              
+              {/* صفحة الخطأ 404 */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          
         </TooltipProvider>
       </LanguageProvider>
     </ThemeProvider>
