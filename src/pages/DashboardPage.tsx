@@ -102,11 +102,12 @@ const DashboardPage = () => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
+  // هنا تم وضع القيم الافتراضية كما طلبت
   const defaultData: FormData = { 
-    client: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
-    comp1: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
-    comp2: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' },
-    comp3: { url: '', followers: '', total_posts: '', content_type: '', frequency: '', ads: 'No' }
+    client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23K', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No' },
+    comp1: { url: 'https://www.facebook.com/flairsystems', followers: '9.3K', total_posts: '2', content_type: 'Mixed', frequency: 'Low', ads: 'No' },
+    comp2: { url: 'https://www.facebook.com/Fastegy1', followers: '8.9', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No' },
+    comp3: { url: 'https://www.facebook.com/secu.group', followers: '4.6K', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No' }
   };
 
   const [formData, setFormData] = useState<FormData>(() => {
