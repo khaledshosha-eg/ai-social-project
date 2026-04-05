@@ -168,11 +168,10 @@ const HomePage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAction()}
+                    onKeyDown={handleEmailSubmit}
                     placeholder={t.placeholder}
-                    className="w-full px-10 py-4 bg-gradient-to-r from-white to-gray-200 text-gray-800 placeholder-gray-400 outline-none rounded-full font-medium shadow-2xl focus:ring-2 focus:ring-blue-500 transition-all"
+                    className="w-full px-10 py-5 bg-gradient-to-r from-white to-gray-200 text-gray-800 placeholder-gray-400 outline-none rounded-full font-bold shadow-2xl focus:ring-4 focus:ring-blue-500/50 transition-all"
                   />
-                  {/* أيقونة السيرش بداخل البار على اليمين */}
                 </div>
                 <div 
                   onClick={handleAction}
