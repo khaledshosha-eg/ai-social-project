@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
                   alt="Ai Social Project" 
                   className="w-10 h-10 object-contain"
                 />
-                <span className="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-900 text-white text-lg font-semibold shadow-lg shadow-blue-500/30 cursor-default">
+                <span className="px-5 py-2 rounded-full bg-gradient-to-r from-blue-800 to-blue-900 text-white text-lg font-semibold shadow-lg shadow-blue-500/30 cursor-default">
                   Ai Social Project
                 </span>
               </div>
@@ -99,7 +99,7 @@ const HomePage: React.FC = () => {
                   Accelerate Your
                 </span>
                 <span className="block drop-shadow-2xl pt-2 pb-3">
-                  <span className="bg-gradient-to-r from-blue-600 to-blue-900 bg-clip-text text-transparent">Business</span>
+                  <span className="bg-gradient-to-r from-blue-500 to-blue-900 bg-clip-text text-transparent">Business</span>
                   <span className="text-white ml-4">Intelligence</span>
                 </span>
               </h1>
