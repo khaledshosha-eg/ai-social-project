@@ -6,29 +6,9 @@ import {
   FileText, Upload, Brain, Lightbulb, Download, Trash2,
   TrendingUp, Users, Target, Rocket, Activity, CheckCircle2
 } from 'lucide-react';
-const callAI = async (prompt: string): Promise<string> => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  
-  const response = await fetch(
-    supabaseUrl + "/functions/v1/ai-proxy",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + supabaseKey,
-      },
-      body: JSON.stringify({ prompt }),
-    }
-  );
-  const data = await response.json();
-  console.log("API Response:", data);
-  if (data.content && data.content[0]) {
-    return data.content[0].text;
-  } else {
-    throw new Error(JSON.stringify(data));
-  }
-};
+import { callAI } from '@/services/aiService';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import Tabs from '@/components/tabs/Tabs';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
@@ -44,6 +24,13 @@ interface PageValues {
   content_type: string;
   frequency: string;
   ads: string;
+  avg_likes: string;
+  avg_comments: string;
+  avg_shares: string;
+  top_post_type: string;
+  posting_time: string;
+  sample_comments: string;
+  posts_count: string;
 }
 
 interface FormData {
@@ -66,57 +53,53 @@ const PageInputCard = React.memo(({ title, color, section, values, onChange }: {
   title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
 }) => {
   const { t } = useLanguage();
-  const colorMap: Record<string, string> = { 
-    blue: 'text-primary', 
-    purple: 'text-primary', 
-    amber: 'text-accent', 
-    emerald: 'text-emerald-400', 
-    green: 'text-emerald-400' 
-  };
-  const bgMap: Record<string, string> = { 
-    blue: 'bg-primary', 
-    purple: 'bg-primary', 
-    amber: 'bg-accent', 
-    emerald: 'bg-emerald-500', 
-    green: 'bg-emerald-500' 
+
+  // Unified handleChange for consistency
+  const handleChange = (field: keyof PageValues, value: string) => {
+    onChange(section, field, value);
   };
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="p-6 rounded-2xl bg-card/40 backdrop-blur-xl border border-white/10 space-y-4 shadow-2xl text-left" 
-      style={{ direction: "ltr" }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-card/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 space-y-4 hover:border-primary/30 transition-all duration-500"
     >
-      <h3 className={`text-lg font-bold ${colorMap[color] || 'text-foreground'} flex items-center gap-2 justify-start`}>
-        <span className={`w-2 h-6 ${bgMap[color] || 'bg-foreground'} rounded-full`}></span>{title}
-      </h3>
-      <input 
-        type="text" 
-        placeholder={t('enterFacebookUrl')} 
-        value={values?.url || ''} 
-        className="w-full bg-secondary/30 backdrop-blur-md border border-white/5 rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal transition-all" 
-        onChange={(e) => onChange(section, 'url', e.target.value)} 
-      />
+      <div className="flex items-center gap-3 mb-2">
+        <div className={`w-3 h-3 rounded-full bg-${color}-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]`} />
+        <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+      </div>
+      
       <div className="grid grid-cols-2 gap-3">
         <input 
           type="text" 
-          placeholder={t('followers')} 
-          value={values?.followers || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => onChange(section, 'followers', e.target.value)} 
+          name={`${section}-url`}
+          placeholder={t('enterFacebookUrl')} 
+          value={values?.url || ''} 
+          className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal transition-all" 
+          onChange={(e) => handleChange('url', e.target.value)} 
         />
         <input 
           type="text" 
+          name={`${section}-followers`}
+          placeholder={t('followers')} 
+          value={values?.followers || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('followers', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          name={`${section}-total_posts`}
           placeholder="Total Posts" 
           value={values?.total_posts || ''} 
           className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => onChange(section, 'total_posts', e.target.value)} 
+          onChange={(e) => handleChange('total_posts', e.target.value)} 
         />
         <select 
+          name={`${section}-content_type`}
           value={values?.content_type || ''} 
           className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
-          onChange={(e) => onChange(section, 'content_type', e.target.value)}
+          onChange={(e) => handleChange('content_type', e.target.value)}
         >
           <option value="" className="text-muted-foreground">Content Type</option>
           <option value="Image">Image</option>
@@ -125,16 +108,76 @@ const PageInputCard = React.memo(({ title, color, section, values, onChange }: {
           <option value="Mixed">Mixed</option>
         </select>
         <select 
+          name={`${section}-frequency`}
           value={values?.frequency || ''} 
           className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
-          onChange={(e) => onChange(section, 'frequency', e.target.value)}
+          onChange={(e) => handleChange('frequency', e.target.value)}
         >
           <option value="" className="text-muted-foreground">{t('postFrequency')}</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
         </select>
+        <input 
+          type="text" 
+          name={`${section}-avg_likes`}
+          placeholder="Avg Likes per Post" 
+          value={values?.avg_likes || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('avg_likes', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          name={`${section}-avg_comments`}
+          placeholder="Avg Comments per Post" 
+          value={values?.avg_comments || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('avg_comments', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          name={`${section}-avg_shares`}
+          placeholder="Avg Shares per Post" 
+          value={values?.avg_shares || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('avg_shares', e.target.value)} 
+        />
+        <input 
+          type="text" 
+          name={`${section}-posting_time`}
+          placeholder="Best Posting Time (e.g. 8PM)" 
+          value={values?.posting_time || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('posting_time', e.target.value)} 
+        />
+        <select 
+          name={`${section}-top_post_type`}
+          value={values?.top_post_type || ''} 
+          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
+          onChange={(e) => handleChange('top_post_type', e.target.value)}
+        >
+          <option value="" className="text-muted-foreground">Top Post Type</option>
+          <option value="Educational">Educational</option>
+          <option value="Promotional">Promotional</option>
+          <option value="Entertaining">Entertaining</option>
+          <option value="Behind the Scenes">Behind the Scenes</option>
+        </select>
+        <input 
+          type="text" 
+          name={`${section}-posts_count`}
+          placeholder="Number of Posts" 
+          value={values?.posts_count || ''} 
+          className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
+          onChange={(e) => handleChange('posts_count', e.target.value)} 
+        />
       </div>
+      <textarea 
+        name={`${section}-sample_comments`}
+        placeholder="3-5 real comments from this page..." 
+        value={values?.sample_comments || ''} 
+        className="w-full bg-secondary/30 backdrop-blur-md border border-white/5 rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal h-24 resize-none transition-all" 
+        onChange={(e) => handleChange('sample_comments', e.target.value)} 
+      />
     </motion.div>
   );
 });
@@ -165,29 +208,35 @@ const DashboardPage = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
   const defaultData: FormData = { 
-    client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23K', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No' },
-    comp1: { url: 'https://www.facebook.com/flairsystems', followers: '9.3K', total_posts: '2', content_type: 'Mixed', frequency: 'Low', ads: 'No' },
-    comp2: { url: 'https://www.facebook.com/Fastegy1', followers: '8.9', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No' },
-    comp3: { url: 'https://www.facebook.com/secu.group', followers: '4.6K', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No' }
+    client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23K', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp1: { url: 'https://www.facebook.com/flairsystems', followers: '9.3K', total_posts: '2', content_type: 'Mixed', frequency: 'Low', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp2: { url: 'https://www.facebook.com/Fastegy1', followers: '8.9', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp3: { url: 'https://www.facebook.com/secu.group', followers: '4.6K', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' }
   };
 
-  const [formData, setFormData] = useState<FormData>(() => {
-    try {
-      const saved = localStorage.getItem('social_pulse_history_v3');
-      return saved ? JSON.parse(saved) : defaultData;
-    } catch {
-      return defaultData;
-    }
-  });
+  const [formData, setFormData] = useLocalStorage<FormData>('social_pulse_form', defaultData);
 
-  // Auto-save effect
+  // Remove the old useEffect for localStorage since useLocalStorage handles it
+  /*
   useEffect(() => {
     localStorage.setItem('social_pulse_history_v3', JSON.stringify(formData));
   }, [formData]);
+  */
 
   const handleUpdate = useCallback((section: keyof FormData, field: keyof PageValues, value: string) => {
-    setFormData((prev) => ({ ...prev, [section]: { ...prev[section], [field]: value } }));
-  }, []);
+    setFormData((prev) => {
+      // Robust functional update with deep spread to prevent any overwrites
+      const newSectionData = { 
+        ...(prev?.[section] || {}), 
+        [field]: value 
+      };
+      
+      return { 
+        ...prev, 
+        [section]: newSectionData as PageValues
+      };
+    });
+  }, [setFormData]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = Array.from(e.target.files || []);
@@ -214,13 +263,15 @@ const DashboardPage = () => {
     try {
       setLoadingStep('Initializing Gemini AI...');
       
-      const prompt = `أنت خبير محرك الذكاء لمشروع Ai Social Project. حلل هذه البيانات لاستخراج الـ 17 ميزة التنافسية، وقم بتبويب النتائج في 5 محاور:
+      const prompt = `أنت خبير محرك الذكاء لمشروع Ai Social Project. مهمتك هي تحليل البيانات المقدمة وتحويلها إلى تقرير استراتيجي متكامل.
       
-      Performance: تحليل أرقام التفاعل.
-      Content: تقييم جودة الصور والفيديوهات والـ Copy.
-      Audience: تحليل المشاعر (Sentiment) ونية الشراء.
-      Competitors: نقاط القوة والضعف.
-      Opportunities & Gaps: ما ينقص السوق الآن.
+      يجب أن يتضمن التحليل 6 محاور رئيسية:
+      1. Market Overview: نظرة عامة على السوق والوضع الحالي.
+      2. Audience Intelligence: تحليل الجمهور، المشاعر، وتوقعات السلوك.
+      3. Competitive Intelligence: مقارنة تفصيلية مع المنافسين ونقاط القوة والضعف.
+      4. Performance Intelligence: تحليل مقاييس التفاعل والأداء الرقمي.
+      5. Content Intelligence: تقييم جودة المحتوى، أنواع المنشورات، وأوقات النشر.
+      6. Actionable Insights: توصيات عملية وخطوات قادمة محددة.
 
       البيانات المدخلة:
       ${JSON.stringify(formData, null, 2)}
@@ -228,14 +279,14 @@ const DashboardPage = () => {
       بيانات الملفات الإضافية:
       ${fileContent || 'لا توجد ملفات إضافية مرفوعة.'}
 
-      يجب أن تكون الاستجابة بصيغة JSON فقط بهذا الهيكل:
+      يجب أن تكون الاستجابة بصيغة JSON متوافقة تماماً مع هذا الهيكل:
       {
-        "performance": { "data": [{"name": "Client", "value": 85}, {"name": "Comp1", "value": 70}], "insights": ["...", "..."] },
-        "content": { "data": [{"name": "Images", "count": 45}, {"name": "Videos", "count": 25}], "insights": ["...", "..."] },
-        "audience": { "data": [{"name": "Positive", "value": 60}, {"name": "Neutral", "value": 30}, {"name": "Negative", "value": 10}], "insights": ["...", "..."] },
-        "competitors": { "data": [{"name": "Strength", "score": 90}, {"name": "Weakness", "score": 30}], "insights": ["...", "..."] },
-        "opportunities": { "data": [{"name": "Trend X", "growth": 40}], "insights": ["...", "..."] },
-        "summary": ["توصية 1", "توصية 2", "توصية 3"]
+        "market": { "overview": "...", "trends": [...], "score": 85 },
+        "audience": { "sentiment": "...", "demographics": "...", "behavior": "..." },
+        "competitive": { "analysis": "...", "competitor_scores": { "comp1": 70, "comp2": 65, "comp3": 80 } },
+        "performance": { "metrics": "...", "growth_potential": "..." },
+        "content": { "strategy": "...", "top_performing_types": ["...", "..."] },
+        "actionable": { "immediate_steps": ["...", "..."], "long_term_strategy": "..." }
       }`;
 
       if (!prompt.trim()) {
@@ -243,20 +294,34 @@ const DashboardPage = () => {
       }
 
       setLoadingStep('Deep analysis in progress...');
-      const text = await callAI(prompt);
+      const text = await callAI(formData, fileContent);
       
-      setLoadingStep('Extracting results...');
-      // Find JSON block if it exists
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const cleanJson = jsonMatch ? jsonMatch[0] : text;
-      const parsedResult = JSON.parse(cleanJson);
+      if (typeof text !== 'string') {
+        throw new Error('AI response is not a string.');
+      }
+
+      setLoadingStep('Extracting and parsing results...');
       
-      setAnalysisResult(parsedResult);
-      localStorage.setItem('analysis_result', JSON.stringify(parsedResult));
-      toast.success('Analysis completed successfully!');
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const cleanJson = jsonMatch ? jsonMatch[0] : text;
+        const parsedResult = JSON.parse(cleanJson);
+        
+        if (!parsedResult || typeof parsedResult !== 'object') {
+          throw new Error('Invalid JSON structure from AI');
+        }
+
+        setLoadingStep('Finalizing report...');
+        setAnalysisResult(parsedResult);
+        localStorage.setItem('analysis_result', JSON.stringify(parsedResult));
+        toast.success('Analysis completed successfully!');
+      } catch (parseErr: any) {
+        console.error("JSON Parse Error:", parseErr, text);
+        throw new Error('AI returned an invalid format. Please try again.');
+      }
     } catch (err: any) {
-      console.error("Error:", err);
-      toast.error('Analysis failed: ' + err.message);
+      console.error("Analysis Error:", err);
+      toast.error('Analysis failed: ' + (err.message || 'Unknown error occurred'));
     } finally {
       setLoading(false);
       setLoadingStep('');
@@ -283,8 +348,9 @@ const DashboardPage = () => {
   const COLORS = ['#8B5CF6', '#F59E0B', '#10B981', '#3B82F6', '#EF4444'];
 
   return (
-    <div className="min-h-screen bg-[#030014] text-foreground p-6 selection:bg-primary/30">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <div className="min-h-screen bg-[#030014] text-foreground p-4 md:p-8 relative overflow-x-hidden font-['Inter']">
+      {/* 85% Scaling Container */}
+      <div className="scale-[0.85] origin-top max-w-7xl mx-auto space-y-12">
         {/* Header Section */}
         <header className="text-center space-y-6 pt-10">
           <motion.h1 
@@ -292,7 +358,7 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl md:text-7xl font-bold tracking-tighter"
           >
-            Social Project <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AI</span>
+            <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span>
           </motion.h1>
           <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
             Transforming data into strategic intelligence.
@@ -366,8 +432,12 @@ const DashboardPage = () => {
             {/* Results Header */}
             <div className="flex justify-between items-end mb-8">
               <div>
-                <h2 className="text-4xl font-bold mb-2">Market Intelligence Report</h2>
-                <p className="text-muted-foreground">Comprehensive analysis generated by Gemini 1.5 Flash</p>
+                <h2 className="text-4xl font-bold mb-2">
+                  <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span> Report
+                </h2>
+                <p className="text-muted-foreground">
+                  Comprehensive analysis generated by <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span> Engine
+                </p>
               </div>
               <div className="flex gap-4">
                 <button 
@@ -385,141 +455,7 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* 5 Glass Cards Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <AnalysisCard title="Performance" icon={Activity} color="blue">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analysisResult.performance.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="name" stroke="#888" />
-                      <YAxis stroke="#888" />
-                      <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }} />
-                      <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {analysisResult.performance.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-muted-foreground">
-                      <CheckCircle2 className="text-primary shrink-0" size={18} /> {insight}
-                    </li>
-                  ))}
-                </ul>
-              </AnalysisCard>
-
-              <AnalysisCard title="Content Strategy" icon={Rocket} color="purple">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analysisResult.content.data} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis type="number" stroke="#888" />
-                      <YAxis dataKey="name" type="category" stroke="#888" />
-                      <Tooltip contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }} />
-                      <Bar dataKey="count" fill="#F59E0B" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {analysisResult.content.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-muted-foreground">
-                      <CheckCircle2 className="text-accent shrink-0" size={18} /> {insight}
-                    </li>
-                  ))}
-                </ul>
-              </AnalysisCard>
-
-              <AnalysisCard title="Audience Sentiment" icon={Users} color="emerald">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analysisResult.audience.data}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {analysisResult.audience.data.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {analysisResult.audience.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-muted-foreground">
-                      <CheckCircle2 className="text-emerald-500 shrink-0" size={18} /> {insight}
-                    </li>
-                  ))}
-                </ul>
-              </AnalysisCard>
-
-              <AnalysisCard title="Competitors" icon={Target} color="red">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analysisResult.competitors.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="name" stroke="#888" />
-                      <YAxis stroke="#888" />
-                      <Tooltip />
-                      <Bar dataKey="score" fill="#EF4444" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {analysisResult.competitors.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-muted-foreground">
-                      <CheckCircle2 className="text-red-500 shrink-0" size={18} /> {insight}
-                    </li>
-                  ))}
-                </ul>
-              </AnalysisCard>
-
-              <AnalysisCard title="Opportunities" icon={TrendingUp} color="amber">
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={analysisResult.opportunities.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis dataKey="name" stroke="#888" />
-                      <YAxis stroke="#888" />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="growth" stroke="#F59E0B" strokeWidth={3} dot={{ r: 6 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-6 space-y-3">
-                  {analysisResult.opportunities.insights.map((insight, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-muted-foreground">
-                      <CheckCircle2 className="text-amber-500 shrink-0" size={18} /> {insight}
-                    </li>
-                  ))}
-                </ul>
-              </AnalysisCard>
-
-              <div className="lg:col-span-1">
-                <AnalysisCard title="Insights Summary" icon={Lightbulb} color="primary">
-                  <div className="space-y-4">
-                    {analysisResult.summary.map((advice, i) => (
-                      <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
-                            {i + 1}
-                          </span>
-                          <span className="font-semibold text-sm">Actionable Priority</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{advice}</p>
-                      </div>
-                    ))}
-                  </div>
-                </AnalysisCard>
-              </div>
-            </div>
+            <Tabs data={analysisResult} />
           </div>
         )}
 

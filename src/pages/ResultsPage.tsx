@@ -55,7 +55,7 @@ const ResultsPage = () => {
       <html dir="rtl" lang="ar">
       <head>
         <meta charset="UTF-8" />
-        <title>تقرير التحليل - AI Social Project</title>
+        <title>تقرير التحليل - Ai Social Project</title>
         <style>
           body { font-family: Arial, sans-serif; background: #fff; color: #111; padding: 40px; direction: rtl; }
           h1 { color: #7c3aed; font-size: 28px; margin-bottom: 8px; }
@@ -108,7 +108,7 @@ const ResultsPage = () => {
           </div>`).join('')}` : ''}
         <h2>🧠 التحليل الاستراتيجي</h2>
         <div class="summary">${data.analysis_summary}</div>
-        <div class="footer">تم إنشاؤه بواسطة AI Social Project</div>
+        <div class="footer">تم إنشاؤه بواسطة Ai Social Project</div>
       </body></html>`;
     const win = window.open('', '_blank');
     if (win) { win.document.write(printContent); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
@@ -116,8 +116,8 @@ const ResultsPage = () => {
 
   const handleShare = () => {
     if (!data) return;
-    const text = `📊 AI Social Project\nMarket Score: ${data.market_score}%\n${data.ranking ? `ترتيبي: ${data.ranking.position}/4\n` : ''}\n💪 نقاط القوة:\n${data.swot_analysis.strengths.map(s=>`• ${s}`).join('\n')}\n\n⚠️ نقاط الضعف:\n${data.swot_analysis.weaknesses.map(w=>`• ${w}`).join('\n')}\n\n🧠 ${data.analysis_summary}`;
-    if (navigator.share) { navigator.share({ title: 'AI Social Report', text }); }
+    const text = `📊 Ai Social Project\nMarket Score: ${data.market_score}%\n${data.ranking ? `ترتيبي: ${data.ranking.position}/4\n` : ''}\n💪 نقاط القوة:\n${data.swot_analysis.strengths.map(s=>`• ${s}`).join('\n')}\n\n⚠️ نقاط الضعف:\n${data.swot_analysis.weaknesses.map(w=>`• ${w}`).join('\n')}\n\n🧠 ${data.analysis_summary}`;
+    if (navigator.share) { navigator.share({ title: 'Ai Social Report', text }); }
     else { navigator.clipboard.writeText(text); alert('تم نسخ التقرير ✅'); }
   };
 
@@ -151,7 +151,7 @@ const ResultsPage = () => {
         {/* Score Header */}
         <div className="text-center space-y-4">
           <motion.h1 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-4xl md:text-5xl font-bold tracking-tight">
-            {t('results')} <span className="text-primary">{t('appName')}</span>
+            {t('results')} <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span>
           </motion.h1>
           <div className="inline-flex items-center gap-4 bg-card p-4 rounded-2xl border border-border shadow-xl">
             <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
