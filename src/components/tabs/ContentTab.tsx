@@ -12,7 +12,7 @@ interface ContentData {
 }
 
 const ContentTab = ({ data }: { data: ContentData }) => {
-  if (!data) return <div className="p-8 text-center text-white/40">No content data available.</div>;
+  if (!data || !data.best_type) return <div className="p-8 text-center text-white/40">No content data available.</div>;
 
   const container = {
     hidden: { opacity: 0 },
@@ -37,10 +37,10 @@ const ContentTab = ({ data }: { data: ContentData }) => {
               <div className="relative z-10 space-y-4">
                 <div>
                   <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-1">Recommended Format</span>
-                  <h4 className="text-3xl font-black text-white">{data.best_type.type}</h4>
+                  <h4 className="text-3xl font-black text-white">{data.best_type?.type || 'Mixed'}</h4>
                 </div>
                 <p className="text-sm text-white/70 leading-relaxed italic">
-                  "{data.best_type.reason}"
+                  "{data.best_type?.reason || 'No specific reason provided.'}"
                 </p>
               </div>
             </div>
@@ -56,7 +56,7 @@ const ContentTab = ({ data }: { data: ContentData }) => {
               </div>
               <div>
                 <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-1">Peak Engagement Window</span>
-                <h4 className="text-4xl font-black text-white">{data.best_time}</h4>
+                <h4 className="text-4xl font-black text-white">{data.best_time || 'N/A'}</h4>
               </div>
             </div>
           </Card>
@@ -70,10 +70,10 @@ const ContentTab = ({ data }: { data: ContentData }) => {
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10">
                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-2">Ideal Length</span>
-                <p className="text-lg font-bold text-white">{data.caption_length.ideal}</p>
+                <p className="text-lg font-bold text-white">{data.caption_length?.ideal || 'N/A'}</p>
               </div>
               <p className="text-xs text-white/50 leading-relaxed">
-                {data.caption_length.reason}
+                {data.caption_length?.reason || ''}
               </p>
             </div>
           </Card>
@@ -85,10 +85,10 @@ const ContentTab = ({ data }: { data: ContentData }) => {
             <div className="space-y-4">
               <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
                 <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2">Requirement</span>
-                <p className="text-lg font-bold text-white">{data.hashtags.needed ? 'Mandatory' : 'Optional'}</p>
+                <p className="text-lg font-bold text-white">{data.hashtags?.needed ? 'Mandatory' : 'Optional'}</p>
               </div>
               <p className="text-xs text-white/50 leading-relaxed">
-                {data.hashtags.recommendation}
+                {data.hashtags?.recommendation || ''}
               </p>
             </div>
           </Card>
@@ -103,7 +103,7 @@ const ContentTab = ({ data }: { data: ContentData }) => {
                 <span className="text-[10px] font-black uppercase tracking-widest">Creative Hook</span>
               </div>
               <p className="text-sm font-medium text-white leading-relaxed">
-                {data.next_content}
+                {data.next_content || 'Explore more creative variations of your top posts.'}
               </p>
             </div>
           </Card>

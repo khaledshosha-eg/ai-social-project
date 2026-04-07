@@ -14,7 +14,7 @@ interface ActionableData {
 }
 
 const ActionableTab = ({ data }: { data: ActionableData }) => {
-  if (!data) return <div className="p-8 text-center text-white/40">No actionable insights available.</div>;
+  if (!data || !data.checklist) return <div className="p-8 text-center text-white/40">No actionable insights available.</div>;
 
   const container = {
     hidden: { opacity: 0 },
@@ -34,7 +34,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
           <Card title="Biggest Opportunity" icon={Target} color="amber">
             <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 h-full flex flex-col justify-center">
               <p className="text-lg font-black text-white leading-relaxed">
-                {data.biggest_opportunity}
+                {data.biggest_opportunity || 'Identifying trends...'}
               </p>
             </div>
           </Card>
@@ -44,7 +44,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
           <Card title="Quick Win (7 Days)" icon={Zap} color="emerald">
             <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 h-full flex flex-col justify-center">
               <p className="text-lg font-black text-white leading-relaxed">
-                {data.quick_win}
+                {data.quick_win || 'Analyze comments for instant feedback.'}
               </p>
             </div>
           </Card>
@@ -54,7 +54,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
           <Card title="Best Ad Angle" icon={Rocket} color="blue">
             <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20 h-full flex flex-col justify-center">
               <p className="text-lg font-black text-white leading-relaxed">
-                {data.best_ad}
+                {data.best_ad || 'Focus on educational content for higher trust.'}
               </p>
             </div>
           </Card>
@@ -69,7 +69,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
               <CheckCircle2 className="text-emerald-400" size={24} /> Strategic Do's
             </h3>
             <div className="grid grid-cols-1 gap-3">
-              {data.do.map((task, i) => (
+              {data.do?.map((task, i) => (
                 <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
                   <div className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span className="text-sm text-white font-medium">{task}</span>
@@ -83,7 +83,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
               <AlertCircle className="text-red-400" size={24} /> Strategic Don'ts
             </h3>
             <div className="grid grid-cols-1 gap-3">
-              {data.dont.map((task, i) => (
+              {data.dont?.map((task, i) => (
                 <div key={i} className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 opacity-70">
                   <div className="w-2 h-2 rounded-full bg-red-400" />
                   <span className="text-sm text-white font-medium">{task}</span>
@@ -97,7 +97,7 @@ const ActionableTab = ({ data }: { data: ActionableData }) => {
         <motion.div variants={item}>
           <Card title="Implementation Checklist" icon={ListChecks} color="purple">
             <p className="text-sm text-white/40 mb-6">Your prioritized roadmap for the coming weeks:</p>
-            <Checklist items={data.checklist} />
+            <Checklist items={data.checklist || []} />
           </Card>
         </motion.div>
       </div>

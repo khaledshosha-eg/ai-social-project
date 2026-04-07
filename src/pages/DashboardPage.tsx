@@ -261,41 +261,11 @@ const DashboardPage = () => {
     setLoadingStep('Collecting data...');
     
     try {
-      setLoadingStep('Initializing Gemini AI...');
-      
-      const prompt = `أنت خبير محرك الذكاء لمشروع Ai Social Project. مهمتك هي تحليل البيانات المقدمة وتحويلها إلى تقرير استراتيجي متكامل.
-      
-      يجب أن يتضمن التحليل 6 محاور رئيسية:
-      1. Market Overview: نظرة عامة على السوق والوضع الحالي.
-      2. Audience Intelligence: تحليل الجمهور، المشاعر، وتوقعات السلوك.
-      3. Competitive Intelligence: مقارنة تفصيلية مع المنافسين ونقاط القوة والضعف.
-      4. Performance Intelligence: تحليل مقاييس التفاعل والأداء الرقمي.
-      5. Content Intelligence: تقييم جودة المحتوى، أنواع المنشورات، وأوقات النشر.
-      6. Actionable Insights: توصيات عملية وخطوات قادمة محددة.
-
-      البيانات المدخلة:
-      ${JSON.stringify(formData, null, 2)}
-      
-      بيانات الملفات الإضافية:
-      ${fileContent || 'لا توجد ملفات إضافية مرفوعة.'}
-
-      يجب أن تكون الاستجابة بصيغة JSON متوافقة تماماً مع هذا الهيكل:
-      {
-        "market": { "overview": "...", "trends": [...], "score": 85 },
-        "audience": { "sentiment": "...", "demographics": "...", "behavior": "..." },
-        "competitive": { "analysis": "...", "competitor_scores": { "comp1": 70, "comp2": 65, "comp3": 80 } },
-        "performance": { "metrics": "...", "growth_potential": "..." },
-        "content": { "strategy": "...", "top_performing_types": ["...", "..."] },
-        "actionable": { "immediate_steps": ["...", "..."], "long_term_strategy": "..." }
-      }`;
-
-      if (!prompt.trim()) {
-        throw new Error('The analysis prompt is empty.');
-      }
-
       setLoadingStep('Deep analysis in progress...');
       const text = await callAI(formData, fileContent);
       
+      console.log("AI RESULT RAW:", text);
+
       if (typeof text !== 'string') {
         throw new Error('AI response is not a string.');
       }
@@ -307,13 +277,26 @@ const DashboardPage = () => {
         const cleanJson = jsonMatch ? jsonMatch[0] : text;
         const parsedResult = JSON.parse(cleanJson);
         
+        console.log("AI RESULT PARSED:", parsedResult);
+
         if (!parsedResult || typeof parsedResult !== 'object') {
           throw new Error('Invalid JSON structure from AI');
         }
 
+        // Map keys if necessary (to ensure market_overview exists)
+        const fixedResult = {
+          ...parsedResult,
+          market_overview: parsedResult.market_overview || parsedResult.market || {},
+          audience: parsedResult.audience || {},
+          competitive: parsedResult.competitive || {},
+          performance: parsedResult.performance || {},
+          content: parsedResult.content || {},
+          actionable: parsedResult.actionable || {}
+        };
+
         setLoadingStep('Finalizing report...');
-        setAnalysisResult(parsedResult);
-        localStorage.setItem('analysis_result', JSON.stringify(parsedResult));
+        setAnalysisResult(fixedResult);
+        localStorage.setItem('analysis_result', JSON.stringify(fixedResult));
         toast.success('Analysis completed successfully!');
       } catch (parseErr: any) {
         console.error("JSON Parse Error:", parseErr, text);

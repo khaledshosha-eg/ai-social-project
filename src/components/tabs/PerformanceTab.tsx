@@ -13,7 +13,7 @@ interface PerformanceData {
 }
 
 const PerformanceTab = ({ data }: { data: PerformanceData }) => {
-  if (!data) return <div className="p-8 text-center text-white/40">No performance data available.</div>;
+  if (!data || !data.data) return <div className="p-8 text-center text-white/40">No performance data available.</div>;
 
   const container = {
     hidden: { opacity: 0 },
@@ -35,7 +35,7 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
           <Card title="Intelligence Score Comparison" icon={BarChartIcon} color="blue">
             <div className="h-80 w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.data}>
+                <BarChart data={data.data || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                   <XAxis dataKey="name" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
@@ -44,7 +44,7 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
                     itemStyle={{ color: '#fff' }}
                   />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
-                    {data.data.map((entry, index) => (
+                    {data.data?.map?.((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
@@ -58,7 +58,7 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
         <motion.div variants={item}>
           <Card title="Engagement Rates" icon={Activity} color="purple">
             <div className="space-y-6">
-              {data.engagement_rates.map((rate, i) => (
+              {data.engagement_rates?.map((rate, i) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-bold text-white">{rate.page}</span>
@@ -82,7 +82,7 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
         <motion.div variants={item}>
           <Card title="Urgent Improvements" icon={AlertCircle} color="red">
             <div className="space-y-4">
-              {data.urgent_improvements.map((imp, i) => (
+              {data.urgent_improvements?.map((imp, i) => (
                 <div key={i} className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-red-400 uppercase tracking-widest">{imp.page}</span>
@@ -102,7 +102,7 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
         <motion.div variants={item}>
           <Card title="Deep Data Insights" icon={Lightbulb} color="amber">
             <div className="space-y-4">
-              {data.hidden_insights.map((insight, i) => (
+              {data.hidden_insights?.map((insight, i) => (
                 <div key={i} className="flex gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 group hover:bg-amber-500/10 transition-all">
                   <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
                     <TrendingUp size={20} />
