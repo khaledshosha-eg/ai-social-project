@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   FileText, Upload, Brain, Lightbulb, Download, Trash2,
   TrendingUp, Users, Target, Rocket, Activity, CheckCircle2, Plus
 } from 'lucide-react';
-import { callAI } from '@/services/aiService';
+import { callAI } from '@/lib/aiService';
+import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import Tabs from '@/components/tabs/Tabs';
 import { 
@@ -16,7 +17,6 @@ import {
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'sonner';
-import AnalysisLoadingOverlay from '@/components/AnalysisLoadingOverlay';
 
 interface PageValues {
   url: string;
@@ -454,7 +454,33 @@ const DashboardPage = () => {
           </div>
         )}
 
-        <AnalysisLoadingOverlay open={loading} loadingStep={loadingStep} />
+        {/* Loading Overlay */}
+        <AnimatePresence>
+          {loading && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#030014]/80 backdrop-blur-2xl"
+            >
+              <div className="text-center space-y-6">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Brain className="w-12 h-12 text-primary animate-bounce" />
+                  </div>
+                  <div className="absolute inset-0 w-32 h-32 rounded-full border-t-4 border-primary animate-spin"></div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    {loadingStep}
+                  </h3>
+                  <p className="text-muted-foreground animate-pulse">Analyzing market dynamics...</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
