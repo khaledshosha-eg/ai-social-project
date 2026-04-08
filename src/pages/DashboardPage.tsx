@@ -207,7 +207,8 @@ const DashboardPage = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [fileContent, setFileContent] = useState<string>('');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-
+  const [facebookUrl, setFacebookUrl] = useState('');
+  const [isScraping, setIsScraping] = useState(false);
   const defaultData: FormData = { 
     client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23K', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
     comp1: { url: 'https://www.facebook.com/flairsystems', followers: '9.3K', total_posts: '2', content_type: 'Mixed', frequency: 'Low', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },

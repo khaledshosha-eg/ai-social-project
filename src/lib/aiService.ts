@@ -1,10 +1,10 @@
 /**
- * AI service: OpenRouter (Meta Llama 3.1 8B Instruct, free tier).
- * No Gemini — chat completions only.
+ * AI service: Groq (Meta Llama 3.1 8B Instruct).
+ * Direct integration with Groq API.
  */
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 const MAX_ATTEMPTS = 3;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,16 +13,9 @@ function shouldRetryResponse(status: number): boolean {
   return status === 429 || (status >= 500 && status <= 599);
 }
 
-function extractAssistantText(data: unknown): string {
+function extractAssistantText(data: any): string {
   if (!data || typeof data !== 'object') return '';
-  const d = data as Record<string, unknown>;
-  const choices = d.choices;
-  if (!Array.isArray(choices) || choices.length === 0) return '';
-  const first = choices[0] as Record<string, unknown>;
-  const message = first?.message as Record<string, unknown> | undefined;
-  const content = message?.content;
-  if (typeof content === 'string') return content;
-  return '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 /**
@@ -30,26 +23,159 @@ function extractAssistantText(data: unknown): string {
  */
 export const buildPrompt = (formData: unknown, fileContent: string): string => {
   return ` 
-أنت خبير استراتيجي في التسويق الرقمي (Senior Digital Marketing Strategist). مهمتك هي تحليل البيانات المقدمة وتحويلها إلى تقرير ذكاء تسويقي (Marketing Intelligence Report) احترافي وشامل لمشروع "Ai Social Project".
+أنت خبير استراتيجي عالمي في التسويق الرقمي + محلل بيانات + خبير سلوك مستهلك (Elite Marketing Intelligence AI).
 
-⚠️ قواعد التحليل (مهم جداً):
-1. حساب نقاط الترتيب (Score 0-100) يجب أن يعتمد على معادلة متوازنة:
-   - معدل التفاعل (Engagement Rate = Likes+Comments+Shares / Followers): ثقل 40%
-   - جودة ونوع المحتوى (Content Quality & Variety): ثقل 20%
-   - نية الشراء من التعليقات (Purchase Intent): ثقل 20%
-   - عدد المتابعين (Followers Count): ثقل 10% (لا تجعله العامل المسيطر)
-   - استمرارية النشر (Posting Frequency): ثقل 10%
+مهمتك: تحويل البيانات الخام إلى تقرير "Marketing Intelligence" احترافي جداً، دقيق، وقابل لاتخاذ قرارات فورية.
 
-2. يجب أن يتضمن التحليل مقارنة واقعية بين العميل (Client) والمنافسين الثلاثة.
-3. استخرج أنماط سلوك الجمهور من "التعليقات الحقيقية" المقدمة.
+━━━━━━━━━━━━━━━━━━━━━━━
+🧠 منهج التفكير (CRITICAL THINKING MODE)
+━━━━━━━━━━━━━━━━━━━━━━━
 
-البيانات للمعالجة:
+1) حلل البيانات كـ:
+- Data Analyst (أرقام)
+- Behavioral Analyst (سلوك)
+- Strategist (قرارات)
+
+2) لا تعتمد على الافتراضات.
+3) أي Insight يجب أن يكون مبني على:
+   - رقم
+   - أو نمط متكرر
+   - أو دليل من التعليقات
+
+4) لو البيانات ناقصة:
+- لا تخترع
+- استخدم أقرب استنتاج منطقي
+- وقلل الثقة ضمنياً في التحليل
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📊 قواعد حساب السكور (STRICT LOGIC)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+احسب Score (0–100) باستخدام:
+
+- Engagement Rate → 40%
+- Content Quality & Variety → 20%
+- Purchase Intent → 20%
+- Followers Count → 10%
+- Posting Frequency → 10%
+
+⚠️ قواعد مهمة:
+- Normalize كل القيم قبل الحساب
+- لا تجعل Followers يطغى على Engagement
+- الصفحات ذات التفاعل العالي تتفوق حتى لو المتابعين أقل
+
+━━━━━━━━━━━━━━━━━━━━━━━
+💬 تحليل التعليقات (CLAUDE-LEVEL)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+استخرج:
+
+1) Sentiment حقيقي:
+- Positive / Negative / Neutral / Sarcasm
+
+2) الأسباب:
+- لماذا الجمهور سعيد أو غاضب؟
+
+3) Purchase Intent:
+- Identify real buying signals:
+  (price / location / how to order / availability)
+
+4) Behavioral Patterns:
+- ماذا يريد الجمهور فعلياً؟
+- ما الذي يزعجه؟
+
+⚠️ مهم:
+- استخدم أمثلة حقيقية من التعليقات
+- لا تعطي Insights عامة
+
+━━━━━━━━━━━━━━━━━━━━━━━
+⚔️ Competitive Intelligence
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- قارن العميل مع 3 منافسين:
+  - بالأرقام
+  - بالاستراتيجية
+  - بالمحتوى
+
+- حدد:
+  - من القائد؟
+  - لماذا؟
+  - أين الفجوات؟
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🧩 Content Intelligence
+━━━━━━━━━━━━━━━━━━━━━━━
+
+حلل:
+
+- أفضل نوع محتوى (ولماذا)
+- أسوأ نوع (ولماذا)
+- أنماط النجاح (Hooks / Style / Timing)
+- أنماط الفشل
+
+━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Action Engine (ChatGPT-Level)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+حوّل كل Insight إلى:
+
+- Action واضح
+- قابل للتنفيذ
+- له تأثير مباشر
+
+⚠️ لا تكتب نصائح عامة مثل:
+"حسّن المحتوى"
+
+✔️ بل:
+"انشر 3 فيديوهات قصيرة أسبوعياً تركز على حل مشكلة السعر"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📦 قواعد الإخراج (STRICT JSON MODE)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ ممنوع تماماً:
+- أي نص خارج JSON
+- أي شرح إضافي
+- أي Markdown
+
+⚠️ يجب:
+- كل القيم تكون واقعية
+- لا تترك أي field فارغ
+- لو لا يوجد بيانات → ضع أفضل تقدير منطقي
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📥 البيانات للمعالجة:
+━━━━━━━━━━━━━━━━━━━━━━━
+
 ${JSON.stringify(formData, null, 2)} 
 
-بيانات الملفات الإضافية (إن وجدت):
+━━━━━━━━━━━━━━━━━━━━━━━
+📎 ملفات إضافية:
+━━━━━━━━━━━━━━━━━━━━━━━
+
 ${fileContent || 'لا يوجد ملفات إضافية'}
 
-أجب بـ JSON فقط، بدون أي مقدمات أو خاتمة، متوافق تماماً مع هذا الهيكل:
+⚠️ Ranking Rules (MANDATORY):
+
+- يجب إرجاع 4 عناصر داخل "ranking" بالضبط:
+  1 عميل + 3 منافسين
+
+- كل عنصر يجب أن يحتوي:
+  page, score, rank
+
+- الترتيب:
+  rank = 1 → الأعلى أداء
+  rank = 4 → الأضعف
+
+- لا يُسمح بإرجاع أقل أو أكثر من 4 عناصر
+
+- Ensure all pages from input are included
+- Do NOT drop any page
+
+━━━━━━━━━━━━━━━━━━━━━━━
+📤 OUTPUT (JSON ONLY — STRICT)
+━━━━━━━━━━━━━━━━━━━━━━━
+
 { 
   "market_overview": { 
     "ranking": [ 
@@ -109,82 +235,57 @@ ${fileContent || 'لا يوجد ملفات إضافية'}
   `;
 };
 
-async function postOpenRouterOnce(prompt: string): Promise<string> {
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY as string;
+async function postGroqOnce(prompt: string): Promise<string> {
+  const apiKey = (import.meta as any).env.VITE_GROQ_API_KEY;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
-  };
-
-  const referer = import.meta.env.VITE_OPENROUTER_HTTP_REFERER as string | undefined;
-  const title = import.meta.env.VITE_OPENROUTER_APP_TITLE as string | undefined;
-  if (referer) headers['HTTP-Referer'] = referer;
-  if (title) headers['X-Title'] = title;
-
-  const response = await fetch(OPENROUTER_API_URL, {
+  const response = await fetch(GROQ_API_URL, {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      model: OPENROUTER_MODEL,
+      model: GROQ_MODEL,
       messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      response_format: { type: "json_object" } // عشان يبعت JSON نضيف
     }),
   });
 
-  const rawText = await response.text();
-  let parsed: unknown;
-  try {
-    parsed = rawText ? JSON.parse(rawText) : {};
-  } catch {
-    parsed = { raw: rawText };
-  }
+  const rawData = await response.json();
 
   if (!response.ok) {
-    const errMsg =
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      'error' in parsed &&
-      typeof (parsed as { error?: { message?: string } }).error?.message === 'string'
-        ? (parsed as { error: { message: string } }).error.message
-        : rawText || `OpenRouter request failed (${response.status})`;
-    const err = new Error(errMsg) as Error & { status?: number };
+    const errMsg = rawData?.error?.message || `Groq request failed (${response.status})`;
+    const err = new Error(errMsg) as any;
     err.status = response.status;
     throw err;
   }
 
-  const text = extractAssistantText(parsed);
+  const text = extractAssistantText(rawData);
   if (!text.trim()) {
-    throw new Error('OpenRouter returned an empty response.');
+    throw new Error('Groq returned an empty response.');
   }
   return text;
 }
 
-/**
- * Calls OpenRouter (Llama 3.1 8B Instruct free) with the built prompt.
- * Retries up to 3 times on transient failures.
- */
 export async function callAI(formData: unknown, fileContent: string): Promise<string> {
-  if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-    throw new Error(
-      'OpenRouter API key missing. Set VITE_OPENROUTER_API_KEY in your environment.'
-    );
+  const apiKey = (import.meta as any).env.VITE_GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error('Groq API key missing. Set VITE_GROQ_API_KEY in your environment.');
   }
 
   const prompt = buildPrompt(formData, fileContent);
-  let lastError: unknown;
+  let lastError: any;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await postOpenRouterOnce(prompt);
-    } catch (err) {
+      return await postGroqOnce(prompt);
+    } catch (err: any) {
       lastError = err;
-      const status = typeof err === 'object' && err !== null && 'status' in err ? (err as { status?: number }).status : undefined;
-      const isRetryable =
-        status === undefined ||
-        (typeof status === 'number' && shouldRetryResponse(status)) ||
-        err instanceof TypeError;
+      const status = err.status;
+      const isRetryable = status === undefined || shouldRetryResponse(status);
 
-      console.warn(`OpenRouter attempt ${attempt}/${MAX_ATTEMPTS} failed`, err);
+      console.warn(`Groq attempt ${attempt}/${MAX_ATTEMPTS} failed`, err);
 
       if (!isRetryable || attempt === MAX_ATTEMPTS) {
         break;
@@ -193,8 +294,5 @@ export async function callAI(formData: unknown, fileContent: string): Promise<st
     }
   }
 
-  console.error('Error in aiService (OpenRouter):', lastError);
-  throw lastError instanceof Error
-    ? lastError
-    : new Error('OpenRouter request failed after retries.');
+  throw lastError instanceof Error ? lastError : new Error('Groq request failed after retries.');
 }
