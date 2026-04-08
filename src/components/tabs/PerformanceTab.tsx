@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Activity, TrendingUp, AlertCircle, Lightbulb, BarChart as BarChartIcon } from 'lucide-react';
-import Card from '../ui/Card';
 import ProgressBar from '../ui/ProgressBar';
+import TabSectionCard from './TabSectionCard';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 
 interface PerformanceData {
@@ -13,34 +13,60 @@ interface PerformanceData {
 }
 
 const PerformanceTab = ({ data }: { data: PerformanceData }) => {
-  if (!data || !data.data) return <div className="p-8 text-center text-white/40">No performance data available.</div>;
+  if (!data || !data.data)
+    return (
+      <div className="p-8 text-center text-white/40" data-tab="performance">
+        No performance data available.
+      </div>
+    );
 
   const container = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
   };
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    show: { opacity: 1, y: 0 },
   };
 
   const COLORS = ['#6B4FBB', '#8B5CF6', '#D8B4FE', '#F3E8FF'];
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Engagement Scores Chart */}
-        <motion.div variants={item} className="lg:col-span-2">
-          <Card title="Intelligence Score Comparison" icon={BarChartIcon} color="blue">
-            <div className="h-80 w-full mt-4">
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-8 lg:space-y-10"
+      data-tab="performance"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+        <motion.div variants={item} className="md:col-span-2 xl:col-span-2">
+          <TabSectionCard
+            icon={BarChartIcon}
+            title="Intelligence score comparison"
+            description="Relative performance scores across analyzed pages or brands."
+            accent="blue"
+            data-section="performance-scores-chart"
+          >
+            <div className="mt-2 h-72 w-full min-h-[16rem] sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.data || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                  <XAxis dataKey="name" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#ffffff40"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#030014', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#030014',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                    }}
                     itemStyle={{ color: '#fff' }}
                   />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} barSize={40}>
@@ -51,69 +77,92 @@ const PerformanceTab = ({ data }: { data: PerformanceData }) => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </TabSectionCard>
         </motion.div>
 
-        {/* Engagement Rates List */}
-        <motion.div variants={item}>
-          <Card title="Engagement Rates" icon={Activity} color="purple">
-            <div className="space-y-6">
+        <motion.div variants={item} className="md:col-span-2 xl:col-span-1">
+          <TabSectionCard
+            icon={Activity}
+            title="Engagement rates"
+            description="Interaction density per follower — with a visual progress read per page."
+            accent="purple"
+            data-section="performance-engagement-rates"
+          >
+            <div className="space-y-6 pt-2">
               {data.engagement_rates?.map((rate, i) => (
                 <div key={i} className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-white">{rate.page}</span>
                     <span className="text-sm font-black text-purple-400">{rate.rate}%</span>
                   </div>
                   <ProgressBar value={rate.rate * 10} color="purple" />
                 </div>
               ))}
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 mt-4">
-                <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-[10px] uppercase leading-relaxed tracking-widest text-white/40">
                   Calculated based on average interaction density per follower.
                 </p>
               </div>
             </div>
-          </Card>
+          </TabSectionCard>
         </motion.div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Urgent Improvements */}
-        <motion.div variants={item}>
-          <Card title="Urgent Improvements" icon={AlertCircle} color="red">
-            <div className="space-y-4">
+        <motion.div variants={item} className="md:col-span-2 xl:col-span-2">
+          <TabSectionCard
+            icon={AlertCircle}
+            title="Urgent improvements"
+            description="High-impact issues paired with practical fixes, grouped by page."
+            accent="red"
+            data-section="performance-urgent"
+          >
+            <div className="space-y-4 pt-2">
               {data.urgent_improvements?.map((imp, i) => (
-                <div key={i} className="p-4 rounded-2xl bg-red-500/5 border border-red-500/10 space-y-3">
+                <div
+                  key={i}
+                  className="space-y-3 rounded-2xl border border-red-500/10 bg-red-500/5 p-4"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-red-400 uppercase tracking-widest">{imp.page}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 text-[10px] font-bold">URGENT</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-red-400">
+                      {imp.page}
+                    </span>
+                    <span className="rounded-md bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400">
+                      Urgent
+                    </span>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white mb-1">Issue: {imp.issue}</p>
+                    <p className="mb-1 text-sm font-bold text-white">Issue: {imp.issue}</p>
                     <p className="text-sm text-white/60">Solution: {imp.solution}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </Card>
+          </TabSectionCard>
         </motion.div>
 
-        {/* Hidden Insights */}
-        <motion.div variants={item}>
-          <Card title="Deep Data Insights" icon={Lightbulb} color="amber">
-            <div className="space-y-4">
+        <motion.div variants={item} className="md:col-span-2 xl:col-span-1">
+          <TabSectionCard
+            icon={Lightbulb}
+            title="Deep data insights"
+            description="Non-obvious patterns worth testing in creative and media."
+            accent="amber"
+            data-section="performance-insights"
+          >
+            <div className="space-y-4 pt-2">
               {data.hidden_insights?.map((insight, i) => (
-                <div key={i} className="flex gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 group hover:bg-amber-500/10 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
+                <div
+                  key={i}
+                  className="flex gap-4 rounded-2xl border border-amber-500/10 bg-amber-500/5 p-4 transition-all hover:bg-amber-500/10"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500">
                     <TrendingUp size={20} />
                   </div>
-                  <p className="text-sm text-white/80 leading-relaxed italic">
-                    "{insight}"
+                  <p className="text-sm leading-relaxed italic text-white/80">
+                    &ldquo;{insight}&rdquo;
                   </p>
                 </div>
               ))}
             </div>
-          </Card>
+          </TabSectionCard>
         </motion.div>
       </div>
     </motion.div>

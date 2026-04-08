@@ -34,9 +34,13 @@ const Tabs: React.FC<TabsProps> = ({ data }) => {
   const ActiveComponent = tabs.find((t) => t.id === activeTab)?.component || MarketOverview;
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-8 lg:space-y-10" data-tabs-root>
       {/* Tab Navigation */}
-      <div className="flex flex-wrap gap-2 p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl">
+      <div
+        className="flex flex-wrap gap-2 p-2 sm:p-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+        role="tablist"
+        aria-label="Report sections"
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -44,9 +48,15 @@ const Tabs: React.FC<TabsProps> = ({ data }) => {
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              id={`tab-trigger-${tab.id}`}
+              data-tab-id={tab.id}
+              aria-selected={isActive}
+              aria-controls={`tab-panel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl transition-all duration-300 relative overflow-hidden
+                flex items-center gap-2 px-5 py-3 sm:px-6 rounded-xl transition-all duration-300 relative overflow-hidden min-h-[44px]
                 ${isActive ? 'text-white' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}
               `}
             >
@@ -70,6 +80,10 @@ const Tabs: React.FC<TabsProps> = ({ data }) => {
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
+          id={`tab-panel-${activeTab}`}
+          role="tabpanel"
+          data-tab-panel={activeTab}
+          aria-labelledby={`tab-trigger-${activeTab}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
