@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   FileText, Upload, Brain, Lightbulb, Download, Trash2,
-  TrendingUp, Users, Target, Rocket, Activity, CheckCircle2, Plus
+  TrendingUp, Users, Target, Rocket, Activity, CheckCircle2, Plus, RefreshCw
 } from 'lucide-react';
 import { callAI } from '@/lib/aiService';
 import { Button } from '@/components/ui/button';
@@ -54,10 +54,74 @@ const PageInputCard = React.memo(({ title, color, section, values, onChange }: {
   title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
 }) => {
   const { t } = useLanguage();
+  const [isFetching, setIsFetching] = useState(false);
 
-  // Unified handleChange for consistency
   const handleChange = (field: keyof PageValues, value: string) => {
     onChange(section, field, value);
+  };
+
+  const handleFetchData = async () => {
+    if (!values?.url) {
+      toast.error('Please enter a Facebook URL first');
+      return;
+    }
+
+    setIsFetching(true);
+    toast.info('Fetching data from Facebook...');
+
+    try {
+      const response = await fetch(
+        `https://api.apify.com/v2/acts/apify~facebook-posts-scraper/run-sync-get-dataset-items?token=${import.meta.env.VITE_APIFY_API_TOKEN}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            startUrls: [{ url: values.url }],
+            resultsLimit: 20,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data from Apify');
+      }
+
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        toast.error('No data found for this page');
+        return;
+      }
+
+      // استخراج البيانات من النتايج
+      const posts = data;
+      const totalPosts = posts.length;
+      const avgLikes = Math.round(posts.reduce((sum: number, p: any) => sum + (p.likes || 0), 0) / totalPosts);
+      const avgComments = Math.round(posts.reduce((sum: number, p: any) => sum + (p.comments || 0), 0) / totalPosts);
+      const avgShares = Math.round(posts.reduce((sum: number, p: any) => sum + (p.shares || 0), 0) / totalPosts);
+      const followers = posts[0]?.pageFollowers || posts[0]?.pageLikes || '';
+      const sampleComments = posts
+        .slice(0, 3)
+        .map((p: any) => p.topComments?.[0]?.text || '')
+        .filter(Boolean)
+        .join('\n');
+
+      // تحديث الحقول
+      onChange(section, 'total_posts', String(totalPosts));
+      onChange(section, 'avg_likes', String(avgLikes));
+      onChange(section, 'avg_comments', String(avgComments));
+      onChange(section, 'avg_shares', String(avgShares));
+      onChange(section, 'posts_count', String(totalPosts));
+      if (followers) onChange(section, 'followers', String(followers));
+      if (sampleComments) onChange(section, 'sample_comments', sampleComments);
+
+      toast.success('Data fetched successfully!');
+    } catch (error: any) {
+      console.error('Fetch error:', error);
+      toast.error('Failed to fetch data: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   return (
@@ -80,6 +144,17 @@ const PageInputCard = React.memo(({ title, color, section, values, onChange }: {
           className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal transition-all" 
           onChange={(e) => handleChange('url', e.target.value)} 
         />
+
+        {/* زرار Fetch Data */}
+        <button
+          onClick={handleFetchData}
+          disabled={isFetching}
+          className="col-span-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-bold transition-all disabled:opacity-50"
+        >
+          <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
+          {isFetching ? 'Fetching...' : 'Fetch Data from Facebook'}
+        </button>
+
         <input 
           type="text" 
           name={`${section}-followers`}
@@ -218,16 +293,8 @@ const DashboardPage = () => {
 
   const [formData, setFormData] = useLocalStorage<FormData>('social_pulse_form', defaultData);
 
-  // Remove the old useEffect for localStorage since useLocalStorage handles it
-  /*
-  useEffect(() => {
-    localStorage.setItem('social_pulse_history_v3', JSON.stringify(formData));
-  }, [formData]);
-  */
-
   const handleUpdate = useCallback((section: keyof FormData, field: keyof PageValues, value: string) => {
     setFormData((prev) => {
-      // Robust functional update with deep spread to prevent any overwrites
       const newSectionData = { 
         ...(prev?.[section] || {}), 
         [field]: value 
@@ -285,7 +352,6 @@ const DashboardPage = () => {
           throw new Error('Invalid JSON structure from AI');
         }
 
-        // Map keys if necessary (to ensure market_overview exists)
         const fixedResult = {
           ...parsedResult,
           market_overview: parsedResult.market_overview || parsedResult.market || {},
