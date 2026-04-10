@@ -1,242 +1,196 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, Heart, MessageCircle, UserPlus, Info, Target, TrendingUp } from 'lucide-react';
+import { Heart, ShoppingCart, User, TrendingUp, MessageCircle } from 'lucide-react';
 import TabSectionCard from './TabSectionCard';
 
-interface AudienceData {
-  sentiment: {
-    positive: number;
-    negative: number;
-    neutral: number;
-    reasons: string[];
-  };
-  purchase_intent: {
-    percentage: number;
-    examples: string[];
-  };
-  persona: {
-    description: string;
-    age_range: string;
-    interests: string[];
-    pain_points: string[];
-  };
-  negative_to_opportunity: string;
-}
+const safe = (v: any, fallback = '—') =>
+  v !== undefined && v !== null && v !== '' ? v : fallback;
 
-const AudienceTab = ({ data }: { data: AudienceData }) => {
-  if (!data)
+const AudienceTab = ({ data }: { data: any }) => {
+  if (!data) {
     return (
-      <div className="p-8 text-center text-white/40" data-tab="audience">
-        No audience data available.
+      <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
+        <p className="text-white/40">Waiting for audience data...</p>
       </div>
     );
+  }
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-  };
+  // ── sentiment ─────────────────────────────────────
+  const sentiment  = data.sentiment || {};
+  const positive   = Number(sentiment.positive)  || 0;
+  const negative   = Number(sentiment.negative)  || 0;
+  const neutral    = Number(sentiment.neutral)   || 0;
+  const reasons: string[]  = Array.isArray(sentiment.reasons)  ? sentiment.reasons  : [];
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
-  };
+  // ── purchase intent ──────────────────────────────
+  const pi        = data.purchase_intent || {};
+  const piPct     = Number(pi.percentage) || 0;
+  const piExamples: string[] = Array.isArray(pi.examples) ? pi.examples : [];
+
+  // ── persona ──────────────────────────────────────
+  const persona   = data.persona || {};
+  const interests: string[]  = Array.isArray(persona.interests)   ? persona.interests   : [];
+  const painPoints: string[] = Array.isArray(persona.pain_points) ? persona.pain_points : [];
+
+  // ── negative to opportunity ──────────────────────
+  const n2o = safe(data.negative_to_opportunity);
+
+  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.07 } } };
+  const item      = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-8 lg:space-y-10"
-      data-tab="audience"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
-        <motion.div variants={item} className="md:col-span-2 xl:col-span-2">
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-8" data-tab="audience">
+
+      {/* ── Sentiment + Purchase Intent row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Sentiment */}
+        <motion.div variants={item}>
           <TabSectionCard
             icon={Heart}
             title="Sentiment analysis"
             description="How audiences feel — and the themes driving positive, neutral, and negative signal."
-            accent="purple"
-            data-section="audience-sentiment"
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4">
-              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-center">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-emerald-400">
-                  Positive
-                </span>
-                <span className="text-3xl font-black text-white">{data.sentiment?.positive || 0}%</span>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-white/40">
-                  Neutral
-                </span>
-                <span className="text-3xl font-black text-white">{data.sentiment?.neutral || 0}%</span>
-              </div>
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-center sm:col-span-1">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-red-400">
-                  Negative
-                </span>
-                <span className="text-3xl font-black text-white">{data.sentiment?.negative || 0}%</span>
-              </div>
-            </div>
-            <div className="mt-6 space-y-4">
-              <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/60">
-                <Info size={14} /> Key sentiment drivers
-              </h4>
-              <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {(data.sentiment?.reasons || []).map((reason, i) => (
-                  <li
-                    key={i}
-                    className="flex gap-3 rounded-xl border border-white/5 bg-white/5 p-3 text-sm text-white/70"
-                  >
-                    <span className="font-bold text-purple-400">#</span> {reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </TabSectionCard>
-        </motion.div>
-
-        <motion.div variants={item} className="md:col-span-2 xl:col-span-1">
-          <TabSectionCard
-            icon={Target}
-            title="Purchase intent"
-            description="Share of audience showing buying signals, with real voice-of-customer examples."
-            accent="amber"
-            data-section="audience-purchase-intent"
-          >
-            <div className="flex flex-col items-center pt-2">
-              <div className="relative inline-block">
-                <svg className="h-32 w-32 -rotate-90 transform">
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="58"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="transparent"
-                    className="text-white/5"
-                  />
-                  <circle
-                    cx="64"
-                    cy="64"
-                    r="58"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="transparent"
-                    strokeDasharray={364.4}
-                    strokeDashoffset={
-                      364.4 - (364.4 * (data.purchase_intent?.percentage || 0)) / 100
-                    }
-                    className="text-amber-500"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-white">
-                    {data.purchase_intent?.percentage || 0}%
-                  </span>
-                  <span className="text-[10px] font-bold uppercase text-amber-500">Intent</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 space-y-4">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
-                Voice of customer
-              </h4>
-              {(data.purchase_intent?.examples || []).map((example, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-amber-500/10 bg-amber-500/5 p-3 text-sm italic text-white/80"
-                >
-                  &ldquo;{example}&rdquo;
-                </div>
-              ))}
-            </div>
-          </TabSectionCard>
-        </motion.div>
-
-        <motion.div variants={item} className="md:col-span-2 xl:col-span-2">
-          <TabSectionCard
-            icon={Users}
-            title="Ideal customer persona"
-            description="Demographics, interests, and pain points your content should speak to."
             accent="blue"
-            data-section="audience-persona"
           >
-            <div className="space-y-6 pt-2">
-              <div className="rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
-                <p className="text-sm leading-relaxed text-white/90 italic">
-                  &ldquo;{data.persona?.description || 'No description available'}&rdquo;
-                </p>
+            <div className="mt-4 space-y-4">
+              {/* 3 bars */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'POSITIVE', value: positive, color: 'emerald' },
+                  { label: 'NEUTRAL',  value: neutral,  color: 'blue'    },
+                  { label: 'NEGATIVE', value: negative, color: 'rose'    },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className={`p-3 rounded-xl bg-${color}-500/10 border border-${color}-500/20 text-center`}>
+                    <p className={`text-xs font-black uppercase tracking-widest text-${color}-400 mb-1`}>{label}</p>
+                    <p className={`text-2xl font-black text-${color}-400`}>{value}%</p>
+                    <div className="mt-2 h-1.5 rounded-full bg-white/5">
+                      <div className={`h-full rounded-full bg-${color}-400`} style={{ width: `${value}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                    Age range
-                  </h4>
-                  <span className="text-lg font-bold text-white">{data.persona?.age_range || 'N/A'}</span>
-                </div>
-                <div>
-                  <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                    Core interests
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {(data.persona?.interests || []).map((int, i) => (
-                      <span
-                        key={i}
-                        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-white/70"
-                      >
-                        {int}
-                      </span>
+
+              {/* Key sentiment drivers */}
+              {reasons.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">
+                    Key Sentiment Drivers
+                  </p>
+                  <div className="space-y-2">
+                    {reasons.map((r, i) => (
+                      <div key={i} className="flex gap-2 items-start p-2 rounded-lg bg-white/5">
+                        <MessageCircle size={13} className="text-primary shrink-0 mt-0.5" />
+                        <p className="text-xs text-white/70">{r}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
-              </div>
-              <div>
-                <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
-                  Top pain points
-                </h4>
-                <ul className="space-y-2">
-                  {(data.persona?.pain_points || []).map((point, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-white/70">
-                      <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" /> {point}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
             </div>
           </TabSectionCard>
         </motion.div>
 
-        <motion.div variants={item} className="md:col-span-2 xl:col-span-1">
+        {/* Purchase Intent */}
+        <motion.div variants={item}>
           <TabSectionCard
-            icon={MessageCircle}
+            icon={ShoppingCart}
+            title="Purchase intent"
+            description="Share of audience showing buying signals, with real voice-of-customer examples."
+            accent="amber"
+          >
+            <div className="mt-4 space-y-4">
+              {/* Circular indicator */}
+              <div className="flex items-center gap-5">
+                <div className="relative w-24 h-24 shrink-0">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" strokeWidth="3"
+                      strokeDasharray={`${piPct} ${100 - piPct}`} strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-black text-amber-400">{piPct}%</span>
+                    <span className="text-[9px] text-white/40 uppercase">Intent</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Voice of Customer</p>
+                  {piExamples.length > 0 ? (
+                    <div className="space-y-2">
+                      {piExamples.map((ex, i) => (
+                        <p key={i} className="text-sm text-white/70 italic border-l-2 border-amber-400/40 pl-3">
+                          &ldquo;{ex}&rdquo;
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-white/30 italic">"لا يوجد تعليقات"</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabSectionCard>
+        </motion.div>
+      </div>
+
+      {/* ── Persona + Crisis to Opportunity row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Persona */}
+        <motion.div variants={item}>
+          <TabSectionCard
+            icon={User}
+            title="Ideal customer persona"
+            description="Demographics, interests, and pain points your content should speak to."
+            accent="purple"
+          >
+            <div className="mt-4 space-y-4">
+              <p className="text-sm text-white/70 italic border border-white/10 rounded-xl p-3 bg-white/5">
+                &ldquo;{safe(persona.description, 'لا يوجد بيانات كافية')}&rdquo;
+              </p>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-1">Age Range</p>
+                  <p className="font-bold text-white">{safe(persona.age_range, 'لا يوجد بيانات')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-1">Core Interests</p>
+                  <div className="flex flex-wrap gap-1">
+                    {interests.length > 0
+                      ? interests.map((int, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-md bg-purple-500/20 border border-purple-500/30 text-purple-300 text-xs">{int}</span>
+                        ))
+                      : <span className="text-xs text-white/30">لا يوجد بيانات</span>}
+                  </div>
+                </div>
+              </div>
+              {painPoints.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Top Pain Points</p>
+                  <ul className="space-y-1">
+                    {painPoints.map((pp, i) => (
+                      <li key={i} className="text-xs text-white/60 flex gap-2">
+                        <span className="text-rose-400 shrink-0">•</span>{pp}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </TabSectionCard>
+        </motion.div>
+
+        {/* Crisis to Opportunity */}
+        <motion.div variants={item}>
+          <TabSectionCard
+            icon={TrendingUp}
             title="Crisis to opportunity"
             description="Reframe negative momentum into a concrete strategic narrative."
             accent="emerald"
-            data-section="audience-opportunity"
           >
-            <div className="space-y-6 pt-2">
-              <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-6">
-                <div className="pointer-events-none absolute -bottom-4 -right-4 opacity-5">
-                  <TrendingUp size={120} />
-                </div>
-                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-emerald-400">
-                  Strategic flip
-                </h4>
-                <p className="relative z-10 text-lg font-medium leading-relaxed text-white">
-                  {data.negative_to_opportunity || 'No strategic insights available at the moment.'}
-                </p>
-              </div>
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                  <UserPlus size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Conversion tip</p>
-                  <p className="text-xs text-white/40">
-                    Engage directly with neutral comments to flip sentiment.
-                  </p>
-                </div>
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-2">Strategic Flip</p>
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-sm text-white/80 leading-relaxed">{n2o}</p>
               </div>
             </div>
           </TabSectionCard>

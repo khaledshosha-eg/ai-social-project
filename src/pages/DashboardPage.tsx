@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { 
-  FileText, Upload, Brain, Lightbulb, Download, Trash2,
-  TrendingUp, Users, Target, Rocket, Activity, CheckCircle2, Plus, RefreshCw
+import {
+  Brain, Download, Trash2, Activity, RefreshCw, CheckCircle2, Loader2
 } from 'lucide-react';
 import { callAI } from '@/lib/aiService';
-import { Button } from '@/components/ui/button';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import Tabs from '@/components/tabs/Tabs';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
-} from 'recharts';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 interface PageValues {
   url: string;
   followers: string;
@@ -41,337 +38,242 @@ interface FormData {
   comp3: PageValues;
 }
 
-interface AnalysisResult {
-  performance: { data: any[], insights: string[] };
-  content: { data: any[], insights: string[] };
-  audience: { data: any[], insights: string[] };
-  competitors: { data: any[], insights: string[] };
-  opportunities: { data: any[], insights: string[] };
-  summary: string[];
-}
+// ─────────────────────────────────────────────
+// PageInputCard
+// ─────────────────────────────────────────────
+const PageInputCard = React.memo(
+  ({
+    title,
+    color,
+    section,
+    values,
+    onChange,
+  }: {
+    title: string;
+    color: string;
+    section: keyof FormData;
+    values: PageValues;
+    onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void;
+  }) => {
+    const [fetchStatus, setFetchStatus] = useState<'idle' | 'fetching' | 'done'>('idle');
 
-const PageInputCard = React.memo(({ title, color, section, values, onChange }: { 
-  title: string, color: string, section: keyof FormData, values: PageValues, onChange: (section: keyof FormData, field: keyof PageValues, value: string) => void 
-}) => {
-  const { t } = useLanguage();
-  const [isFetching, setIsFetching] = useState(false);
+    const handleChange = (field: keyof PageValues, value: string) => {
+      onChange(section, field, value);
+    };
 
-  const handleChange = (field: keyof PageValues, value: string) => {
-    onChange(section, field, value);
-  };
-
-  const handleFetchData = async () => {
-    if (!values?.url) {
-      toast.error('Please enter a Facebook URL first');
-      return;
-    }
-
-    setIsFetching(true);
-    toast.info('Fetching data from Facebook...');
-
-    try {
-      const response = await fetch(
-        `https://api.apify.com/v2/acts/apify~facebook-posts-scraper/run-sync-get-dataset-items?token=${import.meta.env.VITE_APIFY_API_TOKEN}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            startUrls: [{ url: values.url }],
-            resultsLimit: 20,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch data from Apify');
-      }
-
-      const data = await response.json();
-
-      if (!data || data.length === 0) {
-        toast.error('No data found for this page');
+    const handleFetchData = async () => {
+      if (!values?.url) {
+        toast.error('Please enter a Facebook URL first');
         return;
       }
+      setFetchStatus('fetching');
+      toast.info('Starting fetch... this may take 1-2 minutes');
+      const TOKEN = import.meta.env.VITE_APIFY_API_TOKEN;
+      try {
+        const runRes = await fetch(
+          `https://api.apify.com/v2/acts/apify~facebook-posts-scraper/runs?token=${TOKEN}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ startUrls: [{ url: values.url }], resultsLimit: 10 }),
+          }
+        );
+        if (!runRes.ok) throw new Error('Failed to start Apify run');
+        const runData = await runRes.json();
+        const runId: string | undefined = runData?.data?.id;
+        if (!runId) throw new Error('No run ID returned from Apify');
+        toast.info('Scraper started, waiting for results...');
+        let attempts = 0;
+        const maxAttempts = 24;
+        while (attempts < maxAttempts) {
+          await new Promise<void>((resolve) => setTimeout(resolve, 5000));
+          attempts++;
+          const statusRes = await fetch(
+            `https://api.apify.com/v2/acts/apify~facebook-posts-scraper/runs/${runId}?token=${TOKEN}`
+          );
+          const statusData = await statusRes.json();
+          const status: string = statusData?.data?.status;
+          if (status === 'SUCCEEDED') {
+            const dataRes = await fetch(
+              `https://api.apify.com/v2/datasets/${statusData.data.defaultDatasetId}/items?token=${TOKEN}&limit=10`
+            );
+            const posts: any[] = await dataRes.json();
+            if (!posts || posts.length === 0) {
+              toast.error('No posts found for this page');
+              setFetchStatus('idle');
+              return;
+            }
+            const totalPosts = posts.length;
+            const avgLikes    = Math.round(posts.reduce((s: number, p: any) => s + (p.likes    || 0), 0) / totalPosts);
+            const avgComments = Math.round(posts.reduce((s: number, p: any) => s + (p.comments || 0), 0) / totalPosts);
+            const avgShares   = Math.round(posts.reduce((s: number, p: any) => s + (p.shares   || 0), 0) / totalPosts);
+            const followers: string = posts[0]?.pageFollowers || posts[0]?.pageLikes || '';
+            const sampleComments: string = posts.slice(0, 3).map((p: any) => p.topComments?.[0]?.text || '').filter(Boolean).join('\n');
+            onChange(section, 'total_posts',     String(totalPosts));
+            onChange(section, 'avg_likes',       String(avgLikes));
+            onChange(section, 'avg_comments',    String(avgComments));
+            onChange(section, 'avg_shares',      String(avgShares));
+            onChange(section, 'posts_count',     String(totalPosts));
+            if (followers)      onChange(section, 'followers',       followers);
+            if (sampleComments) onChange(section, 'sample_comments', sampleComments);
+            setFetchStatus('done');
+            toast.success('Data fetched successfully!');
+            return;
+          } else if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
+            throw new Error(`Apify run ${status}`);
+          }
+          toast.info(`Still fetching... (${attempts * 5}s elapsed)`);
+        }
+        throw new Error('Timeout: scraper took too long');
+      } catch (error: any) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to fetch: ' + (error.message || 'Unknown error'));
+        setFetchStatus('idle');
+      }
+    };
 
-      // استخراج البيانات من النتايج
-      const posts = data;
-      const totalPosts = posts.length;
-      const avgLikes = Math.round(posts.reduce((sum: number, p: any) => sum + (p.likes || 0), 0) / totalPosts);
-      const avgComments = Math.round(posts.reduce((sum: number, p: any) => sum + (p.comments || 0), 0) / totalPosts);
-      const avgShares = Math.round(posts.reduce((sum: number, p: any) => sum + (p.shares || 0), 0) / totalPosts);
-      const followers = posts[0]?.pageFollowers || posts[0]?.pageLikes || '';
-      const sampleComments = posts
-        .slice(0, 3)
-        .map((p: any) => p.topComments?.[0]?.text || '')
-        .filter(Boolean)
-        .join('\n');
+    const buttonConfig = {
+      idle:     { label: 'FETCH DATA FROM FACEBOOK', icon: <RefreshCw size={14} />,                              className: 'border border-primary/40 text-primary hover:bg-primary/10' },
+      fetching: { label: 'FETCHING...',              icon: <RefreshCw size={14} className="animate-spin" />,     className: 'border border-yellow-400/40 text-yellow-400 cursor-not-allowed opacity-80' },
+      done:     { label: 'FETCHED ✓',               icon: <CheckCircle2 size={14} />,                           className: 'border border-emerald-400/60 text-emerald-400 bg-emerald-400/10' },
+    }[fetchStatus];
 
-      // تحديث الحقول
-      onChange(section, 'total_posts', String(totalPosts));
-      onChange(section, 'avg_likes', String(avgLikes));
-      onChange(section, 'avg_comments', String(avgComments));
-      onChange(section, 'avg_shares', String(avgShares));
-      onChange(section, 'posts_count', String(totalPosts));
-      if (followers) onChange(section, 'followers', String(followers));
-      if (sampleComments) onChange(section, 'sample_comments', sampleComments);
-
-      toast.success('Data fetched successfully!');
-    } catch (error: any) {
-      console.error('Fetch error:', error);
-      toast.error('Failed to fetch data: ' + (error.message || 'Unknown error'));
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-card/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 space-y-4 hover:border-primary/30 transition-all duration-500"
-    >
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`w-3 h-3 rounded-full bg-${color}-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]`} />
-        <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <input 
-          type="text" 
-          name={`${section}-url`}
-          placeholder={t('enterFacebookUrl')} 
-          value={values?.url || ''} 
-          className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal transition-all" 
-          onChange={(e) => handleChange('url', e.target.value)} 
-        />
-
-        {/* زرار Fetch Data */}
-        <button
-          onClick={handleFetchData}
-          disabled={isFetching}
-          className="col-span-2 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-bold transition-all disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
-          {isFetching ? 'Fetching...' : 'Fetch Data from Facebook'}
-        </button>
-
-        <input 
-          type="text" 
-          name={`${section}-followers`}
-          placeholder={t('followers')} 
-          value={values?.followers || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('followers', e.target.value)} 
-        />
-        <input 
-          type="text" 
-          name={`${section}-total_posts`}
-          placeholder="Total Posts" 
-          value={values?.total_posts || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('total_posts', e.target.value)} 
-        />
-        <select 
-          name={`${section}-content_type`}
-          value={values?.content_type || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
-          onChange={(e) => handleChange('content_type', e.target.value)}
-        >
-          <option value="" className="text-muted-foreground">Content Type</option>
-          <option value="Image">Image</option>
-          <option value="Video">Video</option>
-          <option value="Carousel">Carousel</option>
-          <option value="Mixed">Mixed</option>
-        </select>
-        <select 
-          name={`${section}-frequency`}
-          value={values?.frequency || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
-          onChange={(e) => handleChange('frequency', e.target.value)}
-        >
-          <option value="" className="text-muted-foreground">{t('postFrequency')}</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-        </select>
-        <input 
-          type="text" 
-          name={`${section}-avg_likes`}
-          placeholder="Avg Likes per Post" 
-          value={values?.avg_likes || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('avg_likes', e.target.value)} 
-        />
-        <input 
-          type="text" 
-          name={`${section}-avg_comments`}
-          placeholder="Avg Comments per Post" 
-          value={values?.avg_comments || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('avg_comments', e.target.value)} 
-        />
-        <input 
-          type="text" 
-          name={`${section}-avg_shares`}
-          placeholder="Avg Shares per Post" 
-          value={values?.avg_shares || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('avg_shares', e.target.value)} 
-        />
-        <input 
-          type="text" 
-          name={`${section}-posting_time`}
-          placeholder="Best Posting Time (e.g. 8PM)" 
-          value={values?.posting_time || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('posting_time', e.target.value)} 
-        />
-        <select 
-          name={`${section}-top_post_type`}
-          value={values?.top_post_type || ''} 
-          className="bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary" 
-          onChange={(e) => handleChange('top_post_type', e.target.value)}
-        >
-          <option value="" className="text-muted-foreground">Top Post Type</option>
-          <option value="Educational">Educational</option>
-          <option value="Promotional">Promotional</option>
-          <option value="Entertaining">Entertaining</option>
-          <option value="Behind the Scenes">Behind the Scenes</option>
-        </select>
-        <input 
-          type="text" 
-          name={`${section}-posts_count`}
-          placeholder="Number of Posts" 
-          value={values?.posts_count || ''} 
-          className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal" 
-          onChange={(e) => handleChange('posts_count', e.target.value)} 
-        />
-      </div>
-      <textarea 
-        name={`${section}-sample_comments`}
-        placeholder="3-5 real comments from this page..." 
-        value={values?.sample_comments || ''} 
-        className="w-full bg-secondary/30 backdrop-blur-md border border-white/5 rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal h-24 resize-none transition-all" 
-        onChange={(e) => handleChange('sample_comments', e.target.value)} 
-      />
-    </motion.div>
-  );
-});
-
-const AnalysisCard = ({ title, icon: Icon, children, color }: { title: string, icon: any, children: React.ReactNode, color: string }) => (
-  <motion.div 
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="bg-card/30 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl"
-  >
-    <div className="flex items-center gap-3 mb-6">
-      <div className={`p-3 rounded-2xl bg-${color}/20 text-${color}`}>
-        <Icon size={24} />
-      </div>
-      <h3 className="text-xl font-bold">{title}</h3>
-    </div>
-    {children}
-  </motion.div>
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-card/30 backdrop-blur-xl border border-white/10 rounded-3xl p-6 space-y-4 hover:border-primary/30 transition-all duration-500"
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className={`w-3 h-3 rounded-full bg-${color}-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]`} />
+          <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
+          {fetchStatus === 'done' && (
+            <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400 border border-emerald-400/30">
+              DATA READY
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <input type="text" placeholder="ENTER FACEBOOK URL" value={values?.url || ''}
+            className="col-span-2 bg-white rounded-xl p-3 text-sm text-black outline-none font-semibold font-['Montserrat'] placeholder:text-gray-400"
+            onChange={(e) => handleChange('url', e.target.value)} />
+          <button onClick={handleFetchData} disabled={fetchStatus === 'fetching'}
+            className={`col-span-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-transparent text-xs font-bold transition-all font-['Montserrat'] ${buttonConfig.className}`}>
+            {buttonConfig.icon}{buttonConfig.label}
+          </button>
+          <input type="text" placeholder="FOLLOWERS" value={values?.followers || ''}
+            className="col-span-2 bg-white rounded-lg p-2 text-xs text-black outline-none font-medium font-['Montserrat'] placeholder:text-gray-400"
+            onChange={(e) => handleChange('followers', e.target.value)} />
+          <select name={`${section}-content_type`} value={values?.content_type || ''}
+            className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary"
+            onChange={(e) => handleChange('content_type', e.target.value)}>
+            <option value="">Content Type</option>
+            <option value="Image">Image</option>
+            <option value="Video">Video</option>
+            <option value="Carousel">Carousel</option>
+            <option value="Mixed">Mixed</option>
+          </select>
+          <input type="text" name={`${section}-avg_comments`} placeholder="Avg Comments per Post" value={values?.avg_comments || ''}
+            className="col-span-2 bg-secondary/30 backdrop-blur-md border border-white/5 rounded-lg p-2 text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal"
+            onChange={(e) => handleChange('avg_comments', e.target.value)} />
+        </div>
+        <textarea name={`${section}-sample_comments`} placeholder="3-5 real comments from this page..."
+          value={values?.sample_comments || ''}
+          className="w-full bg-secondary/30 backdrop-blur-md border border-white/5 rounded-xl p-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground font-normal h-24 resize-none transition-all"
+          onChange={(e) => handleChange('sample_comments', e.target.value)} />
+      </motion.div>
+    );
+  }
 );
 
+// ─────────────────────────────────────────────
+// DashboardPage
+// ─────────────────────────────────────────────
 const DashboardPage = () => {
-  const navigate = useNavigate();
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
-  const [fileContent, setFileContent] = useState<string>('');
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [facebookUrl, setFacebookUrl] = useState('');
-  const [isScraping, setIsScraping] = useState(false);
-  const defaultData: FormData = { 
-    client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23K', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
-    comp1: { url: 'https://www.facebook.com/flairsystems', followers: '9.3K', total_posts: '2', content_type: 'Mixed', frequency: 'Low', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
-    comp2: { url: 'https://www.facebook.com/Fastegy1', followers: '8.9', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
-    comp3: { url: 'https://www.facebook.com/secu.group', followers: '4.6K', total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' }
+  const [loading, setLoading]           = useState(false);
+  const [loadingStep, setLoadingStep]   = useState('');
+  const [analysisResult, setAnalysisResult] = useState<any | null>(null);
+  const [isExporting, setIsExporting]   = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+
+  // ref to the Tabs setActiveTab function exposed on window
+  const setTabRef = useRef<((tab: string) => void) | null>(null);
+
+  const defaultData: FormData = {
+    client: { url: 'https://www.facebook.com/SafetySourceCo', followers: '23000', total_posts: '5', content_type: 'Image', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp1:  { url: 'https://www.facebook.com/flairsystems',   followers: '9300',  total_posts: '2', content_type: 'Mixed', frequency: 'Low',    ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp2:  { url: 'https://www.facebook.com/Fastegy1',       followers: '8900',  total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
+    comp3:  { url: 'https://www.facebook.com/secu.group',     followers: '4600',  total_posts: '3', content_type: 'Mixed', frequency: 'Medium', ads: 'No', avg_likes: '', avg_comments: '', avg_shares: '', top_post_type: '', posting_time: '', sample_comments: '', posts_count: '' },
   };
 
-  const [formData, setFormData] = useLocalStorage<FormData>('social_pulse_form', defaultData);
+  const [formData, setFormData] = useLocalStorage<FormData>('The_Terminator_AI_form', defaultData);
 
-  const handleUpdate = useCallback((section: keyof FormData, field: keyof PageValues, value: string) => {
-    setFormData((prev) => {
-      const newSectionData = { 
-        ...(prev?.[section] || {}), 
-        [field]: value 
-      };
-      
-      return { 
-        ...prev, 
-        [section]: newSectionData as PageValues
-      };
-    });
-  }, [setFormData]);
+  const handleUpdate = useCallback(
+    (section: keyof FormData, field: keyof PageValues, value: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        [section]: { ...(prev?.[section] || {}), [field]: value } as PageValues,
+      }));
+    },
+    [setFormData]
+  );
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = Array.from(e.target.files || []);
-    setFiles(uploadedFiles);
-    
-    let combinedContent = '';
-    for (const file of uploadedFiles) {
-      const content = await file.text();
-      combinedContent += `\n--- File: ${file.name} ---\n${content}\n`;
-    }
-    setFileContent(combinedContent);
-    toast.success(`${uploadedFiles.length} files uploaded successfully`);
-  };
-
+  // ─── Analysis ───────────────────────────────
   const startAnalysis = async () => {
     if (!formData.client.url) {
       toast.error(t('enterFacebookUrl'));
       return;
     }
-
     setLoading(true);
     setLoadingStep('Collecting data...');
-    
     try {
       setLoadingStep('Deep analysis in progress...');
-      const text = await callAI(formData, fileContent);
-      
-      console.log("AI RESULT RAW:", text);
-
-      if (typeof text !== 'string') {
-        throw new Error('AI response is not a string.');
-      }
-
+      const text = await callAI(formData, '');
+      if (typeof text !== 'string') throw new Error('AI response is not a string.');
       setLoadingStep('Extracting and parsing results...');
-      
       try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const cleanJson = jsonMatch ? jsonMatch[0] : text;
-        const parsedResult = JSON.parse(cleanJson);
-        
-        console.log("AI RESULT PARSED:", parsedResult);
+        const jsonMatch  = text.match(/\{[\s\S]*\}/);
+        const cleanJson  = jsonMatch ? jsonMatch[0] : text;
+        const parsed     = JSON.parse(cleanJson);
+        if (!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
 
-        if (!parsedResult || typeof parsedResult !== 'object') {
-          throw new Error('Invalid JSON structure from AI');
-        }
+        // ── compute summary_stats from ranking ──
+        const ranking: any[] = parsed.market_overview?.ranking || [];
+        const clientRank     = ranking[0];
+        const allScores      = ranking.map((r: any) => Number(r.score) || 0);
+        const avgScore       = allScores.length ? Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / allScores.length) : 0;
+        const maxScore       = Math.max(...allScores, 0);
 
-        const fixedResult = {
-          ...parsedResult,
-          market_overview: parsedResult.market_overview || parsedResult.market || {},
-          audience: parsedResult.audience || {},
-          competitive: parsedResult.competitive || {},
-          performance: parsedResult.performance || {},
-          content: parsedResult.content || {},
-          actionable: parsedResult.actionable || {}
+        const fixed = {
+          ...parsed,
+          market_overview: {
+            ...(parsed.market_overview || {}),
+            summary_stats: {
+              rank_score:     Number(clientRank?.score) || 0,
+              pages_analyzed: ranking.length || 4,
+              avg_score:      avgScore,
+              score_gap:      maxScore - (Number(clientRank?.score) || 0),
+            },
+          },
+          audience:    parsed.audience    || {},
+          competitive: parsed.competitive || {},
+          performance: parsed.performance || {},
+          content:     parsed.content     || {},
+          actionable:  parsed.actionable  || {},
+          summary:     parsed.summary     || [],
         };
 
         setLoadingStep('Finalizing report...');
-        setAnalysisResult(fixedResult);
-        localStorage.setItem('analysis_result', JSON.stringify(fixedResult));
+        setAnalysisResult(fixed);
+        localStorage.setItem('analysis_result', JSON.stringify(fixed));
         toast.success('Analysis completed successfully!');
       } catch (parseErr: any) {
-        console.error("JSON Parse Error:", parseErr, text);
+        console.error('JSON Parse Error:', parseErr, text);
         throw new Error('AI returned an invalid format. Please try again.');
       }
     } catch (err: any) {
-      console.error("Analysis Error:", err);
+      console.error('Analysis Error:', err);
       toast.error('Analysis failed: ' + (err.message || 'Unknown error occurred'));
     } finally {
       setLoading(false);
@@ -379,140 +281,184 @@ const DashboardPage = () => {
     }
   };
 
-  const exportPDF = async () => {
-    const element = document.getElementById('analysis-report');
-    if (!element) return;
-    
-    toast.info('Generating PDF...');
-    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#000000' });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('SocialPulse-Report.pdf');
-    toast.success('Report exported successfully');
+  // ─── Export PDF — all tabs ───────────────────
+  const ALL_TABS = ['market', 'audience', 'competitive', 'performance', 'content', 'actionable'];
+  const TAB_LABELS: Record<string, string> = {
+    market:      'Market Overview',
+    audience:    'Audience Intelligence',
+    competitive: 'Competitive Intelligence',
+    performance: 'Performance Intelligence',
+    content:     'Content Intelligence',
+    actionable:  'Actionable Insights',
   };
 
-  const COLORS = ['#8B5CF6', '#F59E0B', '#10B981', '#3B82F6', '#EF4444'];
+  const exportPDF = async () => {
+    if (isExporting) return;
 
+    // get setActiveTab from window (set by Tabs component)
+    const setTab = (window as any).setActiveTab as ((id: string) => void) | undefined;
+    if (!setTab) {
+      toast.error('Cannot find tab controller. Please try again.');
+      return;
+    }
+
+    setIsExporting(true);
+    setExportProgress(0);
+    toast.info('Starting export — capturing all 6 tabs...');
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', compress: true });
+    let firstPage = true;
+
+    try {
+      for (let i = 0; i < ALL_TABS.length; i++) {
+        const tabId = ALL_TABS[i];
+
+        // 1. switch tab
+        setTab(tabId);
+
+        // 2. wait for React to re-render + animations to settle
+        await new Promise<void>((r) => setTimeout(r, 1100));
+
+        // 3. find the panel — prefer the tab-panel wrapper, fallback to whole report
+        const panel =
+          document.querySelector<HTMLElement>(`[data-tab-panel="${tabId}"]`) ||
+          document.getElementById('analysis-report');
+
+        if (!panel) {
+          toast.warning(`Could not capture tab: ${TAB_LABELS[tabId]}`);
+          continue;
+        }
+
+        // 4. scroll panel into view
+        panel.scrollIntoView({ behavior: 'instant' });
+        await new Promise<void>((r) => setTimeout(r, 200));
+
+        // 5. capture
+        const canvas = await html2canvas(panel, {
+          scale: 1.6,
+          backgroundColor: '#030014',
+          useCORS: true,
+          allowTaint: true,
+          windowWidth: 1440,
+          windowHeight: panel.scrollHeight + 80,
+          scrollY: 0,
+          ignoreElements: (el) =>
+            el.classList?.contains('print:hidden') ||
+            el.id === 'loading-overlay',
+        });
+
+        // 6. add page
+        const pw = canvas.width  / 1.6;
+        const ph = canvas.height / 1.6;
+        if (firstPage) { pdf.deletePage(1); firstPage = false; }
+        pdf.addPage([pw, ph], pw > ph ? 'landscape' : 'portrait');
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, pw, ph);
+
+        const progress = Math.round(((i + 1) / ALL_TABS.length) * 100);
+        setExportProgress(progress);
+        toast.info(`Captured: ${TAB_LABELS[tabId]} (${progress}%)`);
+      }
+
+      const fileName = `The_Terminator_AI-${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+      toast.success(`✅ PDF saved: ${fileName}`);
+
+    } catch (err: any) {
+      console.error('Export error:', err);
+      toast.error('Export failed: ' + (err.message || 'Unknown'));
+    } finally {
+      setIsExporting(false);
+      setExportProgress(0);
+      // return to first tab
+      setTab('market');
+    }
+  };
+
+  // ─── Render ──────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#030014] text-foreground p-4 md:p-8 relative overflow-x-hidden font-['Inter']">
-      {/* 85% Scaling Container */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white overflow-x-hidden font-['Montserrat'] relative">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-800/10 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
+
       <div className="scale-[0.85] origin-top max-w-7xl mx-auto space-y-12">
-        {/* Header Section */}
+
+        {/* Header */}
         <header className="text-center space-y-6 pt-10">
-          <motion.h1 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-6xl md:text-7xl font-bold tracking-tighter"
-          >
-            <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span>
+          <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+            className="text-6xl md:text-7xl font-bold tracking-tighter">
+            <span style={{ color: '#6B4FBB' }}>Ai</span>{' '}
+            <span className="text-white">The Terminator AI</span>
           </motion.h1>
           <p className="text-muted-foreground text-xl max-w-2xl mx-auto">
             Transforming data into strategic intelligence.
           </p>
-          <div className="flex justify-center pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl border-white/10 bg-white/5 text-white shadow-none backdrop-blur-xl hover:bg-white/10 hover:text-white"
-              onClick={() => console.log('Add Page Clicked')}
-            >
-              <Plus />
-              Add Page
-            </Button>
-          </div>
         </header>
 
         {!analysisResult ? (
           <div className="space-y-12">
-            {/* Input Cards Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <PageInputCard title={t('you')} color="blue" section="client" values={formData.client} onChange={handleUpdate} />
-              <PageInputCard title={`${t('competitor')} 1`} color="purple" section="comp1" values={formData.comp1} onChange={handleUpdate} />
-              <PageInputCard title={`${t('competitor')} 2`} color="amber" section="comp2" values={formData.comp2} onChange={handleUpdate} />
-              <PageInputCard title={`${t('competitor')} 3`} color="green" section="comp3" values={formData.comp3} onChange={handleUpdate} />
+              <PageInputCard title={t('you')}               color="blue"   section="client" values={formData.client} onChange={handleUpdate} />
+              <PageInputCard title={`${t('competitor')} 1`} color="purple" section="comp1"  values={formData.comp1}  onChange={handleUpdate} />
+              <PageInputCard title={`${t('competitor')} 2`} color="amber"  section="comp2"  values={formData.comp2}  onChange={handleUpdate} />
+              <PageInputCard title={`${t('competitor')} 3`} color="green"  section="comp3"  values={formData.comp3}  onChange={handleUpdate} />
             </div>
-
-            {/* Advanced Data & Action Section */}
-            <div className="max-w-3xl mx-auto space-y-8">
-              <div className="p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Upload className="text-primary" /> Advanced Data
-                  </h3>
-                  <span className="text-xs text-muted-foreground">CSV, Excel, Text</span>
+            <div className="flex justify-center gap-6">
+              <button onClick={() => { localStorage.removeItem('The_Terminator_AI_history_v3'); window.location.reload(); }}
+                className="flex items-center gap-2 px-8 py-4 rounded-2xl font-bold bg-white/5 hover:bg-red-500/10 hover:text-red-400 transition-all border border-white/10">
+                <Trash2 size={20} /> Clear
+              </button>
+              <button disabled={loading} onClick={startAnalysis}
+                className="relative group overflow-hidden px-12 py-4 rounded-2xl font-bold shadow-2xl transition-all disabled:opacity-50">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent group-hover:scale-110 transition-transform duration-500" />
+                <div className="relative flex items-center gap-3 text-white">
+                  {loading ? <Activity className="animate-spin" /> : <Brain className="group-hover:animate-pulse" />}
+                  {loading ? 'Analyzing...' : 'Analyze Market'}
                 </div>
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:border-primary/50 transition-all bg-white/5">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                  </div>
-                  <input type="file" className="hidden" multiple onChange={handleFileUpload} accept=".csv,.txt,.xlsx" />
-                </label>
-                {files.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {files.map((file, i) => (
-                      <span key={i} className="px-3 py-1 bg-primary/20 text-primary text-xs rounded-full flex items-center gap-2">
-                        <FileText size={12} /> {file.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-center gap-6">
-                <button 
-                  onClick={() => { localStorage.removeItem('social_pulse_history_v3'); window.location.reload(); }} 
-                  className="group flex items-center gap-2 px-8 py-4 rounded-2xl font-bold bg-white/5 hover:bg-red-500/10 hover:text-red-400 transition-all border border-white/10"
-                >
-                  <Trash2 size={20} /> Clear
-                </button>
-                <button 
-                  disabled={loading} 
-                  onClick={startAnalysis} 
-                  className="relative group overflow-hidden px-12 py-4 rounded-2xl font-bold shadow-2xl transition-all disabled:opacity-50"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent group-hover:scale-110 transition-transform duration-500"></div>
-                  <div className="relative flex items-center gap-3 text-white">
-                    {loading ? (
-                      <Activity className="animate-spin" />
-                    ) : (
-                      <Brain className="group-hover:animate-pulse" />
-                    )}
-                    {loading ? 'Analyzing...' : 'Analyze Market'}
-                  </div>
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         ) : (
           <div id="analysis-report" className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-            {/* Results Header */}
+
+            {/* ── Report Header with Export button ── */}
             <div className="flex justify-between items-end mb-8">
               <div>
                 <h2 className="text-4xl font-bold mb-2">
-                  <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span> Report
+                  <span style={{ color: '#6B4FBB' }}>Ai</span>{' '}
+                  <span className="text-white">The Terminator AI</span> Report
                 </h2>
                 <p className="text-muted-foreground">
-                  Comprehensive analysis generated by <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">Social Project</span> Engine
+                  Comprehensive analysis generated by{' '}
+                  <span style={{ color: '#6B4FBB' }}>Ai</span>{' '}
+                  <span className="text-white">The Terminator AI</span> Engine
                 </p>
               </div>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => setAnalysisResult(null)}
-                  className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold"
-                >
+              <div className="flex gap-4 print:hidden">
+                <button onClick={() => setAnalysisResult(null)}
+                  className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-semibold">
                   New Analysis
                 </button>
-                <button 
+
+                {/* ── Export Report button ── */}
+                <button
                   onClick={exportPDF}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all font-semibold shadow-lg shadow-primary/20"
+                  disabled={isExporting}
+                  className="relative overflow-hidden flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all font-semibold shadow-lg shadow-primary/20 disabled:opacity-70 min-w-[160px] justify-center"
                 >
-                  <Download size={18} /> Export Report
+                  {/* progress bar inside button */}
+                  {isExporting && (
+                    <span
+                      className="absolute inset-0 bg-white/10 transition-all duration-300"
+                      style={{ width: `${exportProgress}%` }}
+                    />
+                  )}
+                  <span className="relative flex items-center gap-2">
+                    {isExporting
+                      ? <><Loader2 size={16} className="animate-spin" /> {exportProgress}% Exporting…</>
+                      : <><Download size={16} /> Export Report</>}
+                  </span>
                 </button>
               </div>
             </div>
@@ -524,19 +470,16 @@ const DashboardPage = () => {
         {/* Loading Overlay */}
         <AnimatePresence>
           {loading && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-[#030014]/80 backdrop-blur-2xl"
-            >
+            <motion.div id="loading-overlay"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#030014]/80 backdrop-blur-2xl">
               <div className="text-center space-y-6">
                 <div className="relative">
-                  <div className="w-32 h-32 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                  <div className="w-32 h-32 rounded-full border-4 border-primary/20 animate-pulse" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Brain className="w-12 h-12 text-primary animate-bounce" />
                   </div>
-                  <div className="absolute inset-0 w-32 h-32 rounded-full border-t-4 border-primary animate-spin"></div>
+                  <div className="absolute inset-0 w-32 h-32 rounded-full border-t-4 border-primary animate-spin" />
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
