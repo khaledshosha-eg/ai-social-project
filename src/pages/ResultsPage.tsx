@@ -117,7 +117,7 @@ const ResultsPage = () => {
   const handleShare = () => {
     if (!data) return;
     const text = `📊 The Terminator AI\nMarket Score: ${data.market_score}%\n${data.ranking ? `ترتيبي: ${data.ranking.position}/4\n` : ''}\n💪 نقاط القوة:\n${data.swot_analysis.strengths.map(s=>`• ${s}`).join('\n')}\n\n⚠️ نقاط الضعف:\n${data.swot_analysis.weaknesses.map(w=>`• ${w}`).join('\n')}\n\n🧠 ${data.analysis_summary}`;
-    if (navigator.share) { navigator.share({ title: 'The Terminator AI Report', text }); }
+    if (navigator.share) { navigator.share({ title: 'The_Terminator_AI Report', text }); }
     else { navigator.clipboard.writeText(text); alert('تم نسخ التقرير ✅'); }
   };
 

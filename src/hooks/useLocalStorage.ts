@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
  * @param key The localStorage key to use
  * @param initialValue The initial value if no value exists in localStorage
  */
-export function useLocalStorage<T>(key: string = 'social_pulse_data', initialValue: T) {
+export function useLocalStorage<T>(key: string = 'TheTerminator_AI_data', initialValue: T) {
   // Get from local storage then parse stored json or return initialValue
   const readValue = (): T => {
     if (typeof window === 'undefined') {

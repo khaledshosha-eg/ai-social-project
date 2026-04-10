@@ -10,7 +10,7 @@ interface Translations {
 }
 
 const translations: Translations = {
-  appName: { en: 'Ai Social Project', ar: 'مشروع Ai Social' },
+  appName: { en: 'The Terminator AI', ar: 'مشروع The Terminator AI' },
   login: { en: 'Login', ar: 'تسجيل الدخول' },
   enterEmail: { en: 'Enter your email to receive a magic link', ar: 'أدخل بريدك الإلكتروني لتلقي رابط تسجيل الدخول' },
   sendMagicLink: { en: 'Send Magic Link', ar: 'إرسال رابط تسجيل الدخول' },

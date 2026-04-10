@@ -10,7 +10,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
  */
 export const buildPrompt = (formData: any, fileContent: string): string => { 
   return ` 
-أنت خبير استراتيجي في التسويق الرقمي (Senior Digital Marketing Strategist). مهمتك هي تحليل البيانات المقدمة وتحويلها إلى تقرير ذكاء تسويقي (Marketing Intelligence Report) احترافي وشامل لمشروع "Ai Social Project".
+أنت خبير استراتيجي في التسويق الرقمي (Senior Digital Marketing Strategist). مهمتك هي تحليل البيانات المقدمة وتحويلها إلى تقرير ذكاء تسويقي (Marketing Intelligence Report) احترافي وشامل لمشروع "The Terminator AI".
 
 ⚠️ قواعد التحليل (مهم جداً):
 1. حساب نقاط الترتيب (Score 0-100) يجب أن يعتمد على معادلة متوازنة:

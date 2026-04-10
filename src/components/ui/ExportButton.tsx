@@ -12,7 +12,7 @@ interface ExportButtonProps {
 
 const ExportButton: React.FC<ExportButtonProps> = ({ 
   reportId = 'analysis-report', 
-  filename = 'SocialPulse-AI-Report.pdf',
+  filename = 'TheTerminator-AI-Report.pdf',
   className
 }) => {
   const [isExporting, setIsExporting] = useState(false);

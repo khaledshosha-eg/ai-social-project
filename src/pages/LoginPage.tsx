@@ -182,7 +182,7 @@ const HomePage: React.FC = () => {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="font-['Poppins'] text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">The Terminator AI</span> Ecosystem
+                <span style={{ color: '#6B4FBB' }}>Ai</span> <span className="text-white">TheTerminator</span> Ecosystem
               </h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                 Integrated smart tools for analyzing and managing social media with high efficiency

@@ -100,7 +100,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ setActiveTab }) => {
         setProgress(Math.round(((i + 1) / ALL_TABS.length) * 100));
       }
 
-      const fileName = `AiSocialProject-Report-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const fileName = `TheTerminatorAI-Report-${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(fileName);
       toast.success(`✅ Report exported: ${fileName}`);
 
@@ -120,7 +120,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ setActiveTab }) => {
     const url = window.location.href;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Ai Social Project Report', url });
+        await navigator.share({ title: 'The Terminator AI Report', url });
       } catch { /* user cancelled */ }
     } else {
       await navigator.clipboard.writeText(url);
