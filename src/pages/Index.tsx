@@ -77,7 +77,7 @@ const floatingCards = [
   },
 ] as const;
 
-/* ─── Single Floating Card ─── */
+/* ─── Single Floating Card — static, fixed w-44 ─── */
 const FloatingCard: React.FC<{ card: (typeof floatingCards)[number] }> = ({ card }) => {
   const Icon = card.icon;
   return (
@@ -159,6 +159,7 @@ const FloatingCard: React.FC<{ card: (typeof floatingCards)[number] }> = ({ card
         </div>
       )}
 
+      {/* AI Insights — بيانات حقيقية */}
       {card.id === 'ai-insights' && 'metrics' in card.content && (
         <div className="space-y-1.5">
           {card.content.metrics.map((m) => (
@@ -174,11 +175,12 @@ const FloatingCard: React.FC<{ card: (typeof floatingCards)[number] }> = ({ card
 };
 
 /* ─────────────────────────────────────────
-   Static Title
+   Static Title — بدون حركة
 ───────────────────────────────────────── */
 const AnimatedTitle: React.FC = () => {
   return (
     <div className="select-none">
+      {/* "The Terminator" line */}
       <div className="font-['Montserrat'] text-4xl md:text-5xl font-black tracking-tighter leading-none mb-1">
         <span className="text-white">The Terminator </span>
         <span style={{
@@ -268,6 +270,10 @@ const HomePage: React.FC = () => {
           0%, 100% { box-shadow: 0 0 20px rgba(80, 35, 204, 0.5), 0 0 50px rgba(107,79,187,0.2); }
           50%       { box-shadow: 0 0 40px rgba(107,79,187,0.9), 0 0 80px rgba(107,79,187,0.4); }
         }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position:  200% center; }
+        }
 
         .hero-stage   { animation: heroReveal 1s ease-out 0.2s both; }
         .card-reveal  { animation: floatIn   0.5s ease-out both;      }
@@ -282,66 +288,10 @@ const HomePage: React.FC = () => {
         .red-eye-fx   { animation: redGlow  2s ease-in-out infinite; }
         .pulse-glow   { animation: pulsGlow 2s ease-in-out infinite; }
 
+        /* Pentagon / Arrow-down clip — مثلث في الأسفل */
         .hero-pentagon {
           clip-path: polygon(8% 0%, 92% 0%, 100% 60%, 50% 100%, 0% 60%);
         }
-
-        /* ═══════════════════════════════════════
-           3D CURVED CARDS — زي صورة VaultX
-        ═══════════════════════════════════════ */
-        .curved-cards-stage {
-          perspective: 1200px;
-          perspective-origin: 50% 40%;
-        }
-
-        .curved-card-item {
-          transition: transform 0.4s ease, box-shadow 0.4s ease;
-          transform-style: preserve-3d;
-          will-change: transform;
-        }
-
-        .curved-card-item:hover {
-          transform: translateY(-6px) scale(1.04) !important;
-          z-index: 50 !important;
-        }
-
-        /* card-far-left */
-        .card-far-left {
-          transform: perspective(800px) rotateY(28deg) rotateX(10deg) translateX(-20px) translateZ(-60px);
-          opacity: 0.75;
-        }
-        /* card-left */
-        .card-left {
-          transform: perspective(800px) rotateY(16deg) rotateX(5deg) translateX(-8px) translateZ(-20px);
-          opacity: 0.9;
-        }
-        /* card-center */
-        .card-center {
-          transform: perspective(800px) rotateY(0deg) rotateX(0deg) translateZ(0px);
-          opacity: 1;
-        }
-        /* card-right */
-        .card-right {
-          transform: perspective(800px) rotateY(-16deg) rotateX(5deg) translateX(8px) translateZ(-20px);
-          opacity: 0.9;
-        }
-        /* card-far-right */
-        .card-far-right {
-          transform: perspective(800px) rotateY(-28deg) rotateX(10deg) translateX(20px) translateZ(-60px);
-          opacity: 0.75;
-        }
-
-        @keyframes curvedFloat0 { 0%,100%{transform: perspective(800px) rotateY(28deg) rotateX(10deg) translateX(-20px) translateZ(-60px) translateY(0px);} 50%{transform: perspective(800px) rotateY(28deg) rotateX(10deg) translateX(-20px) translateZ(-60px) translateY(-10px);} }
-        @keyframes curvedFloat1 { 0%,100%{transform: perspective(800px) rotateY(16deg) rotateX(5deg) translateX(-8px) translateZ(-20px) translateY(0px);} 50%{transform: perspective(800px) rotateY(16deg) rotateX(5deg) translateX(-8px) translateZ(-20px) translateY(-8px);} }
-        @keyframes curvedFloat2 { 0%,100%{transform: perspective(800px) rotateY(0deg) rotateX(0deg) translateZ(0px) translateY(0px);} 50%{transform: perspective(800px) rotateY(0deg) rotateX(0deg) translateZ(0px) translateY(-13px);} }
-        @keyframes curvedFloat3 { 0%,100%{transform: perspective(800px) rotateY(-16deg) rotateX(5deg) translateX(8px) translateZ(-20px) translateY(0px);} 50%{transform: perspective(800px) rotateY(-16deg) rotateX(5deg) translateX(8px) translateZ(-20px) translateY(-8px);} }
-        @keyframes curvedFloat4 { 0%,100%{transform: perspective(800px) rotateY(-28deg) rotateX(10deg) translateX(20px) translateZ(-60px) translateY(0px);} 50%{transform: perspective(800px) rotateY(-28deg) rotateX(10deg) translateX(20px) translateZ(-60px) translateY(-10px);} }
-
-        .curved-animate-0 { animation: curvedFloat0 4.2s ease-in-out infinite; }
-        .curved-animate-1 { animation: curvedFloat1 3.8s ease-in-out infinite 0.4s; }
-        .curved-animate-2 { animation: curvedFloat2 4.5s ease-in-out infinite 0.8s; }
-        .curved-animate-3 { animation: curvedFloat3 3.8s ease-in-out infinite 0.4s; }
-        .curved-animate-4 { animation: curvedFloat4 4.2s ease-in-out infinite; }
       `}</style>
 
       {/* ── 90% Scale Wrapper ── */}
@@ -359,7 +309,7 @@ const HomePage: React.FC = () => {
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-full px-6 py-2 shadow-2xl w-fit">
             <div className="flex items-center gap-8 md:gap-16">
               <div className="flex items-center gap-3">
-                <img src="./Logo.png" alt="The Terminator Ai" className="w-10 h-10 object-contain" />
+              <img src="./Logo.png" alt="The Terminator Ai" className="w-10 h-10 object-contain" />
                 <span className="px-5 py-1 rounded-full bg-gradient-to-r from-blue-800 to-blue-900 text-white text-lg font-semibold shadow-lg shadow-blue-500/30">
                   <span style={{ color: '#6B4FBB' }}></span>{' '}
                   <span className="text-white"> The Terminator Ai</span>
@@ -386,6 +336,8 @@ const HomePage: React.FC = () => {
             {/* ── Animated Title + Slogans ── */}
             <div className="text-center mb-6 card-reveal" style={{ animationDelay: '0.1s' }}>
               <AnimatedTitle />
+
+              {/* Slogan 1 */}
               <p className="font-['Montserrat'] text-xl md:text-xl font-Bold tracking-widest uppercase mt-3 mb-2"
                 style={{
                   background: 'linear-gradient(90deg, #6B4FBB, #3b82f6, #6B4FBB)',
@@ -395,31 +347,33 @@ const HomePage: React.FC = () => {
                 }}>
                 Terminate Competition .. Begin Domination
               </p>
+
+              {/* Slogan 2 */}
               <p className="text-white/40 text-sm font-light max-w-xl mx-auto">
                 ai-powered social media intelligence — out think, out perform, dominate.
               </p>
             </div>
 
             {/* ══════════════════════════════════════════
-                HERO COMPOSITE — Pentagon + 3D Curved Cards
+                HERO COMPOSITE — cards overlap pentagon top
             ══════════════════════════════════════════ */}
             <div className="relative mx-auto" style={{ width: '900px', minHeight: '900px' }}>
 
-              {/* ── LEFT COLUMN — 3 cards stacked ── */}
+              {/* LEFT COLUMN — 3 cards stacked */}
               <div className="absolute top-0 left-0 z-20 flex flex-col gap-3" style={{ width: '176px' }}>
-                <FloatingCard card={floatingCards[0]} />
-                <FloatingCard card={floatingCards[1]} />
-                <FloatingCard card={floatingCards[2]} />
+                <FloatingCard card={floatingCards[0]} /> {/* Market Score */}
+                <FloatingCard card={floatingCards[1]} /> {/* SWOT Analysis */}
+                <FloatingCard card={floatingCards[2]} /> {/* Competitor Analysis */}
               </div>
 
-              {/* ── RIGHT COLUMN — 3 cards stacked ── */}
+              {/* RIGHT COLUMN — 3 cards stacked */}
               <div className="absolute top-0 right-0 z-20 flex flex-col gap-3" style={{ width: '176px' }}>
-                <FloatingCard card={floatingCards[3]} />
-                <FloatingCard card={floatingCards[4]} />
-                <FloatingCard card={floatingCards[5]} />
+                <FloatingCard card={floatingCards[3]} /> {/* Engagement Rate */}
+                <FloatingCard card={floatingCards[4]} /> {/* AI Insights */}
+                <FloatingCard card={floatingCards[5]} /> {/* Action Plan */}
               </div>
 
-              {/* ── HERO STAGE: Pentagon shape ── */}
+              {/* ── HERO STAGE: Pentagon shape — centered ── */}
               <div
                 className="hero-stage hero-pentagon relative mx-auto overflow-visible"
                 style={{
@@ -432,7 +386,7 @@ const HomePage: React.FC = () => {
                 {/* Scanline */}
                 <div className="scanline-fx" />
 
-                {/* Robot image */}
+                {/* Robot image — fills shape */}
                 <img
                   src="./terminator-hero.png"
                   alt="The Terminator Ai"
@@ -449,159 +403,7 @@ const HomePage: React.FC = () => {
                   `,
                 }} />
 
-                {/* ════════════════════════════════════════
-                    3D CURVED CARDS ROW — داخل المثلث في المنتصف
-                ════════════════════════════════════════ */}
-                <div
-                  className="curved-cards-stage absolute z-30"
-                  style={{
-                    bottom: '28%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '680px',
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'center',
-                    gap: '10px',
-                  }}
-                >
-                  {/* Card 0 — Far Left */}
-                  <div className="curved-card-item curved-animate-0" style={{ zIndex: 1, flexShrink: 0 }}>
-                    <div className="w-36 rounded-2xl border backdrop-blur-xl p-3 cursor-default"
-                      style={{
-                        background: 'rgba(8,14,36,0.90)',
-                        borderColor: `${floatingCards[0].color}40`,
-                        boxShadow: `0 0 20px ${floatingCards[0].color}22, 0 8px 32px rgba(0,0,0,0.7)`,
-                        transform: 'perspective(800px) rotateY(28deg) rotateX(10deg) translateX(-20px) translateZ(-60px)',
-                        opacity: 0.75,
-                      }}>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="p-1 rounded-md" style={{ background: `${floatingCards[0].color}22` }}>
-                          <Trophy size={11} style={{ color: floatingCards[0].color }} />
-                        </div>
-                        <span className="text-[9px] font-bold text-white/70 truncate">Market Score</span>
-                      </div>
-                      <div className="text-xl font-black text-white mb-1">87%</div>
-                      <div className="h-1 rounded-full bg-white/10">
-                        <div className="h-full rounded-full w-[87%]" style={{ background: `linear-gradient(90deg, ${floatingCards[0].color}, #3b82f6)` }} />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[8px] text-white/30">Your position</span>
-                        <span className="text-[8px] font-bold text-emerald-400">+12%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 1 — Left */}
-                  <div className="curved-card-item curved-animate-1" style={{ zIndex: 2, flexShrink: 0 }}>
-                    <div className="w-40 rounded-2xl border backdrop-blur-xl p-3 cursor-default"
-                      style={{
-                        background: 'rgba(8,14,36,0.92)',
-                        borderColor: `${floatingCards[2].color}40`,
-                        boxShadow: `0 0 24px ${floatingCards[2].color}22, 0 8px 32px rgba(0,0,0,0.7)`,
-                        transform: 'perspective(800px) rotateY(16deg) rotateX(5deg) translateX(-8px) translateZ(-20px)',
-                        opacity: 0.9,
-                      }}>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="p-1 rounded-md" style={{ background: `${floatingCards[2].color}22` }}>
-                          <Swords size={11} style={{ color: floatingCards[2].color }} />
-                        </div>
-                        <span className="text-[9px] font-bold text-white/70 truncate">Competitors</span>
-                      </div>
-                      <div className="space-y-1">
-                        {floatingCards[2].content.bars.map((bar) => (
-                          <div key={bar.label} className="flex items-center gap-1">
-                            <span className="text-[7px] text-white/40 w-8 shrink-0">{bar.label}</span>
-                            <div className="flex-1 h-0.5 rounded-full bg-white/10">
-                              <div className="h-full rounded-full" style={{ width: `${bar.value}%`, background: bar.color }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 2 — Center (أكبر وفي المقدمة) */}
-                  <div className="curved-card-item curved-animate-2" style={{ zIndex: 10, flexShrink: 0 }}>
-                    <div className="w-48 rounded-2xl border-2 backdrop-blur-xl p-4 cursor-default"
-                      style={{
-                        background: 'rgba(8,14,36,0.95)',
-                        borderColor: `${floatingCards[4].color}60`,
-                        boxShadow: `0 0 40px ${floatingCards[4].color}44, 0 16px 48px rgba(0,0,0,0.8), 0 0 80px rgba(107,79,187,0.2)`,
-                      }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="p-1.5 rounded-lg" style={{ background: `${floatingCards[4].color}22`, border: `1px solid ${floatingCards[4].color}44` }}>
-                          <Brain size={14} style={{ color: floatingCards[4].color }} />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/90">AI Insights</span>
-                        <div className="ml-auto w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      </div>
-                      <div className="space-y-2">
-                        {floatingCards[4].content.metrics.map((m) => (
-                          <div key={m.label} className="flex items-center justify-between rounded-lg px-2 py-1" style={{ background: `${m.color}10` }}>
-                            <span className="text-[9px] text-white/50">{m.label}</span>
-                            <span className="text-[10px] font-black" style={{ color: m.color }}>{m.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 3 — Right */}
-                  <div className="curved-card-item curved-animate-3" style={{ zIndex: 2, flexShrink: 0 }}>
-                    <div className="w-40 rounded-2xl border backdrop-blur-xl p-3 cursor-default"
-                      style={{
-                        background: 'rgba(8,14,36,0.92)',
-                        borderColor: `${floatingCards[3].color}40`,
-                        boxShadow: `0 0 24px ${floatingCards[3].color}22, 0 8px 32px rgba(0,0,0,0.7)`,
-                        transform: 'perspective(800px) rotateY(-16deg) rotateX(5deg) translateX(8px) translateZ(-20px)',
-                        opacity: 0.9,
-                      }}>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="p-1 rounded-md" style={{ background: `${floatingCards[3].color}22` }}>
-                          <Activity size={11} style={{ color: floatingCards[3].color }} />
-                        </div>
-                        <span className="text-[9px] font-bold text-white/70">Engagement</span>
-                      </div>
-                      <div className="text-2xl font-black text-white">9.8%</div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-[8px] text-white/30">vs 2.1% avg</span>
-                        <span className="text-[8px] font-bold text-emerald-400">+128%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card 4 — Far Right */}
-                  <div className="curved-card-item curved-animate-4" style={{ zIndex: 1, flexShrink: 0 }}>
-                    <div className="w-36 rounded-2xl border backdrop-blur-xl p-3 cursor-default"
-                      style={{
-                        background: 'rgba(8,14,36,0.90)',
-                        borderColor: `${floatingCards[5].color}40`,
-                        boxShadow: `0 0 20px ${floatingCards[5].color}22, 0 8px 32px rgba(0,0,0,0.7)`,
-                        transform: 'perspective(800px) rotateY(-28deg) rotateX(10deg) translateX(20px) translateZ(-60px)',
-                        opacity: 0.75,
-                      }}>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <div className="p-1 rounded-md" style={{ background: `${floatingCards[5].color}22` }}>
-                          <Sparkles size={11} style={{ color: floatingCards[5].color }} />
-                        </div>
-                        <span className="text-[9px] font-bold text-white/70">Action Plan</span>
-                      </div>
-                      <div className="space-y-1">
-                        {floatingCards[5].content.steps.map((step, i) => (
-                          <div key={i} className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full flex items-center justify-center text-[6px] font-black shrink-0"
-                              style={{ background: floatingCards[5].color, color: '#fff' }}>{i + 1}</div>
-                            <span className="text-[8px] text-white/60">{step}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* ═══ نهاية 3D Curved Cards ═══ */}
-
-                {/* Red eye glow */}
+                {/* Red eye glow — enhanced */}
                 <div className="red-eye-fx absolute pointer-events-none"
                   style={{ top: '29%', left: '38%', width: '20px', height: '20px', zIndex: 20 }}>
                   <div className="w-full h-full rounded-full"
@@ -613,27 +415,28 @@ const HomePage: React.FC = () => {
                   background: 'radial-gradient(ellipse 80% 100% at 50% 100%, rgba(107,79,187,0.3) 0%, transparent 70%)',
                   filter: 'blur(16px)', zIndex: 15,
                 }} />
+
               </div>
               {/* ── نهاية المثلث ── */}
 
             </div>
             {/* ── نهاية Hero Composite ── */}
 
-            {/* ── CTA Button ── */}
-            <div className="flex justify-center relative z-30 -mt-16 mb-10">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="pulse-glow flex items-center gap-3 px-8 py-4 rounded-full font-black text-white text-sm tracking-widest uppercase transition-all hover:scale-110 hover:brightness-125"
-                style={{
-                  background: 'linear-gradient(135deg, #6B4FBB, #3b82f6)',
-                  boxShadow: '0 0 30px rgba(107,79,187,0.6)',
-                }}
-              >
-                <Brain size={18} />
-                Launch Analysis
-                <ArrowRight size={18} />
-              </button>
-            </div>
+            {/* ── CTA Button — خارج المثلث، تحته مباشرة ── */}
+            <div className="flex justify-center relative z-30 -mt-16 mb-10"> 
+  <button
+    onClick={() => navigate('/dashboard')}
+    className="pulse-glow flex items-center gap-3 px-8 py-4 rounded-full font-black text-white text-sm tracking-widest uppercase transition-all hover:scale-110 hover:brightness-125"
+    style={{
+      background: 'linear-gradient(135deg, #6B4FBB, #3b82f6)',
+      boxShadow: '0 0 30px rgba(107,79,187,0.6)',
+    }}
+  >
+    <Brain size={18} />
+    Launch Analysis
+    <ArrowRight size={18} />
+  </button>
+</div>
 
             {/* Search Bar */}
             <div className="max-w-lg mx-auto mt-8 card-reveal" style={{ animationDelay: '0.5s' }}>
@@ -719,6 +522,7 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-sm text-white/30 mb-6">Over 60 types of specialized AI agents for content and audience analysis</p>
+
                 <div className="relative h-36 mb-5 rounded-xl overflow-visible" style={{ background: 'rgba(59,130,246,0.05)' }}>
                   <svg className="w-full h-full" viewBox="0 0 400 140">
                     <defs>
@@ -774,23 +578,34 @@ const HomePage: React.FC = () => {
         ══════════════════════════════════════════ */}
         <footer id="contact" className="relative z-10 px-6 py-16">
           <div className="max-w-6xl mx-auto">
+
+            {/* Top row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-14">
-              {/* Col 1 — Brand */}
+
+              {/* Col 1 — Brand + About */}
               <div className="space-y-5">
                 <div className="flex items-center gap-3">
                   <img src="./Logo.png" alt="Logo" className="w-10 h-10 object-contain" />
                   <div>
+                    {/* ✅ استبدال "Ai Social Project" بـ "The Terminator Ai" */}
                     <div className="font-['Montserrat'] font-black text-lg leading-tight">
                       <span style={{ color: '#6B4FBB' }}>The</span>{' '}
                       <span className="text-white">Terminator Ai</span>
                     </div>
+                    {/* ✅ استبدال "The Terminator Ai" بـ "Social Media Intelligence" */}
                     <div className="text-[10px] text-white/30 tracking-widest uppercase">Social Media Intelligence</div>
                   </div>
                 </div>
-                <blockquote className="relative pl-4 text-sm text-white/50 italic leading-relaxed"
-                  style={{ borderLeft: '3px solid #6B4FBB' }}>
-                  "We don't just analyze your competitors — we help you dominate them."
+
+                {/* Quote */}
+                <blockquote
+                  className="relative pl-4 text-sm text-white/50 italic leading-relaxed"
+                  style={{ borderLeft: '3px solid #6B4FBB' }}
+                >
+                  "We don't just analyze your competitors — we help you dominate them. Every insight is a weapon, every report is a battle plan."
                 </blockquote>
+
+                {/* Rating */}
                 <div className="flex items-center gap-2">
                   {[1,2,3,4,5].map(i => (
                     <Star key={i} size={14} className="fill-amber-400 text-amber-400" />
@@ -799,22 +614,28 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Col 2 — Owner */}
+              {/* Col 2 — Owner Info */}
               <div className="space-y-4">
                 <h4 className="text-white font-bold text-base tracking-wide flex items-center gap-2">
-                  <Award size={16} style={{ color: '#6B4FBB' }} /> About the Creator
+                  <Award size={16} style={{ color: '#6B4FBB' }} />
+                  About the Creator
                 </h4>
+
                 <div className="space-y-1">
                   <p className="text-white font-bold text-lg">KHaled SHosha</p>
                   <p className="text-white/50 text-sm">Marketing Team Leader & Art Director</p>
                   <p className="text-white/30 text-xs">Smart Home · Automation · Security Systems</p>
                 </div>
+
                 <p className="text-white/40 text-sm leading-relaxed">
                   Senior-level strategist specializing in AI-driven marketing, brand development, and competitive intelligence for B2B markets in Egypt and the MENA region.
                 </p>
+
+                {/* Skills badges */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {['AI Marketing', 'Social Strategy', 'Brand Design', 'B2B Growth'].map(tag => (
-                    <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+                    <span key={tag}
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-full"
                       style={{ background: 'rgba(107,79,187,0.2)', border: '1px solid rgba(107,79,187,0.4)', color: '#a78bfa' }}>
                       {tag}
                     </span>
@@ -825,13 +646,15 @@ const HomePage: React.FC = () => {
               {/* Col 3 — Contact */}
               <div className="space-y-4">
                 <h4 className="text-white font-bold text-base tracking-wide flex items-center gap-2">
-                  <Globe size={16} style={{ color: '#3b82f6' }} /> Get In Touch
+                  <Globe size={16} style={{ color: '#3b82f6' }} />
+                  Get In Touch
                 </h4>
+
                 <div className="space-y-3">
                   {[
-                    { icon: Mail,   label: 'Email',    val: 'khaledshosha@gmail.com',    color: '#6B4FBB' },
-                    { icon: Globe,  label: 'Website',  val: 'linktr.ee/khaledshosha.eg', color: '#3b82f6' },
-                    { icon: MapPin, label: 'Location', val: 'Cairo, Egypt',               color: '#10b981' },
+                    { icon: Mail,    label: 'Email',    val: 'khaledshosha@gmail.com',       color: '#6B4FBB' },
+                    { icon: Globe,   label: 'Website',  val: 'linktr.ee/khaledshosha.eg',    color: '#3b82f6' },
+                    { icon: MapPin,  label: 'Location', val: 'Cairo, Egypt',                  color: '#10b981' },
                   ].map(({ icon: Icon, label, val, color }) => (
                     <div key={label} className="flex items-center gap-3">
                       <div className="p-1.5 rounded-lg shrink-0"
@@ -845,24 +668,33 @@ const HomePage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* ✅ Social icons + Facebook + Behance */}
                 <div className="flex gap-3 mt-2 flex-wrap">
-                  <a href="#" className="p-2 rounded-xl transition-all hover:scale-110"
+                  <a href="#"
+                    className="p-2 rounded-xl transition-all hover:scale-110"
                     style={{ background: 'rgba(0,119,181,0.18)', border: '1px solid rgba(0,119,181,0.4)' }}>
                     <Linkedin size={15} style={{ color: '#0077b5' }} />
                   </a>
-                  <a href="#" className="p-2 rounded-xl transition-all hover:scale-110"
+                  <a href="#"
+                    className="p-2 rounded-xl transition-all hover:scale-110"
                     style={{ background: 'rgba(29,161,242,0.18)', border: '1px solid rgba(29,161,242,0.4)' }}>
                     <Twitter size={15} style={{ color: '#1da1f2' }} />
                   </a>
-                  <a href="#" className="p-2 rounded-xl transition-all hover:scale-110"
+                  <a href="#"
+                    className="p-2 rounded-xl transition-all hover:scale-110"
                     style={{ background: 'rgba(225,48,108,0.18)', border: '1px solid rgba(225,48,108,0.4)' }}>
                     <Instagram size={15} style={{ color: '#e1306c' }} />
                   </a>
-                  <a href="#" className="p-2 rounded-xl transition-all hover:scale-110"
+                  {/* ✅ Facebook */}
+                  <a href="#"
+                    className="p-2 rounded-xl transition-all hover:scale-110"
                     style={{ background: 'rgba(24,119,242,0.18)', border: '1px solid rgba(24,119,242,0.4)' }}>
                     <FacebookIcon size={15} color="#1877f2" />
                   </a>
-                  <a href="#" className="p-2 rounded-xl transition-all hover:scale-110"
+                  {/* ✅ Behance */}
+                  <a href="#"
+                    className="p-2 rounded-xl transition-all hover:scale-110"
                     style={{ background: 'rgba(23,105,255,0.18)', border: '1px solid rgba(23,105,255,0.4)' }}>
                     <BehanceIcon size={15} color="#1769ff" />
                   </a>
@@ -873,7 +705,7 @@ const HomePage: React.FC = () => {
             {/* Bottom bar */}
             <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
               <p className="text-xs text-white/20">
-                © {new Date().getFullYear()} The Terminator Ai — Social Media Project. All rights reserved.
+              © {new Date().getFullYear()} The Terminator Ai — Social Media Project. All rights reserved.
               </p>
               <p className="text-xs text-white/20 flex items-center gap-1.5">
                 Built with precision by
@@ -884,7 +716,7 @@ const HomePage: React.FC = () => {
           </div>
         </footer>
 
-      </div>
+      </div>{/* end 90% scale wrapper */}
     </div>
   );
 };
