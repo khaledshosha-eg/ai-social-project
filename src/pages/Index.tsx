@@ -377,7 +377,7 @@ const HomePage: React.FC = () => {
               <div
                 className="hero-stage hero-pentagon relative mx-auto overflow-visible"
                 style={{
-                  width: '629px',
+                  width: '729px',
                   height: '900px',
                   border: '1px solid rgba(107,79,187,0.2)',
                   boxShadow: '0 0 80px rgba(107,79,187,0.12), 0 0 160px rgba(59,130,246,0.07)',
@@ -391,7 +391,7 @@ const HomePage: React.FC = () => {
                   src="./terminator-hero.png"
                   alt="The Terminator Ai"
                   className="w-full h-full object-cover object-top select-none"
-                  style={{ filter: 'contrast(1.00) brightness(0.90)' }}
+                  style={{ filter: 'contrast(1.10) brightness(0.90)' }}
                   draggable={false}
                 />
 
@@ -423,20 +423,20 @@ const HomePage: React.FC = () => {
             {/* ── نهاية Hero Composite ── */}
 
             {/* ── CTA Button — خارج المثلث، تحته مباشرة ── */}
-            <div className="flex justify-center mt-6 mb-2">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="pulse-glow flex items-center gap-2 px-7 py-3 rounded-full font-bold text-white text-sm tracking-wide transition-all hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg, #6B4FBB, #3b82f6)',
-                  border: '1px solid rgba(107,79,187,0.6)',
-                }}
-              >
-                <Brain size={16} />
-                Launch Analysis
-                <ArrowRight size={16} />
-              </button>
-            </div>
+            <div className="flex justify-center relative z-30 -mt-16 mb-10"> 
+  <button
+    onClick={() => navigate('/dashboard')}
+    className="pulse-glow flex items-center gap-3 px-8 py-4 rounded-full font-black text-white text-sm tracking-widest uppercase transition-all hover:scale-110 hover:brightness-125"
+    style={{
+      background: 'linear-gradient(135deg, #6B4FBB, #3b82f6)',
+      boxShadow: '0 0 30px rgba(107,79,187,0.6)',
+    }}
+  >
+    <Brain size={18} />
+    Launch Analysis
+    <ArrowRight size={18} />
+  </button>
+</div>
 
             {/* Search Bar */}
             <div className="max-w-lg mx-auto mt-8 card-reveal" style={{ animationDelay: '0.5s' }}>
